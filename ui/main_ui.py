@@ -2,11 +2,15 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QStackedWidget, QListWidget,
-    QTableWidget, QTableWidgetItem, QGroupBox, QSplitter,
-QHeaderView, QTabWidget, QMessageBox, QFormLayout, QComboBox, QGridLayout,
+    QTableWidget, QSplitter,
+QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout,
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QIcon
+from pathlib import Path
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -19,11 +23,14 @@ class MainWindow(QMainWindow):
         }
 
         # Load QSS
+        BASE_DIR = Path(__file__).resolve().parent.parent
+        QSS_PATH = BASE_DIR / "styles" / "main.qss"
+
         try:
-            with open("main.qss", "r") as f:
+            with open(QSS_PATH, "r", encoding="utf-8") as f:
                 self.setStyleSheet(f.read())
         except Exception as e:
-            print("Warning: main.qss not found or invalid.")
+            print("Warning: main.qss not found:", e)
 
         # Stacked widget for different pages
         self.stacked_widget = QStackedWidget()
@@ -48,6 +55,7 @@ class MainWindow(QMainWindow):
 
         # Connect sidebar selection to page change
         self.sidebar.currentRowChanged.connect(self.stacked_widget.setCurrentIndex)
+        self.sidebar.itemClicked.connect(self.on_sidebar_clicked)
 
         # Header (top bar)
         header = QWidget()
@@ -93,90 +101,131 @@ class MainWindow(QMainWindow):
         # Set default page
         self.sidebar.setCurrentRow(0)
 
+    def on_sidebar_clicked(self, item):
+        row = self.sidebar.row(item)
+
+        # Always switch to the clicked page first
+        self.stacked_widget.setCurrentIndex(row)
+
+        # If it's Dashboard (index 0), refresh it
+        if row < len(self.sidebar):
+            self.refresh_dashboard()
+
+    def refresh_dashboard(self):
+        QMessageBox.information(self, "Dashboard", "Dashboard đã tự động làm mới!")
+
     def create_dashboard_page(self):
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setContentsMargins(40, 70, 40, 40)
         layout.setSpacing(30)
 
-        # Grid for summary cards (2 rows × 3 columns or responsive)
-        grid_layout = QGridLayout()
-        grid_layout.setSpacing(25)
+        # Summary Cards
+        grid = QGridLayout()
+        grid.setSpacing(25)
 
-        # Sample data - REPLACE THESE WITH REAL VALUES FROM YOUR DATABASE LATER
-        total_books = 1247
-        total_members = 482
-        currently_borrowed = 156
-        overdue_books = 23
-        total_unpaid_fines = 1850000  # in VND
+        # Sample data
+        cards = [
+            ("Total Books", "1,247", "#3498db"),
+            ("Currently Borrowed", "156", "#f39c12"),
+            ("Overdue Books", "23", "#e74c3c"),
+            ("Total Members", "482", "#2ecc71"),
+            ("Available Books", "800", "#f39c12"),
+            ("Unpaid Fines", "1,850,000 ₫", "#9b59b6"),
+        ]
 
-        # Card 1: Total Books
-        grid_layout.addWidget(self.create_summary_card(
-            "📚", "Total Books", f"{total_books:,}", "#3498db"), 0, 0)
+        for i, (title, value, color) in enumerate(cards):
+            row = i // 3
+            col = i % 3
+            card = self._create_summary_card(title, value, color)
+            grid.addWidget(card, row, col)
 
-        # Card 2: Total Members
-        grid_layout.addWidget(self.create_summary_card(
-            "👥", "Total Members", f"{total_members:,}", "#2ecc71"), 0, 1)
+        layout.addLayout(grid)
 
-        # Card 3: Currently Borrowed
-        grid_layout.addWidget(self.create_summary_card(
-            "📖", "Currently Borrowed", f"{currently_borrowed}", "#f39c12"), 0, 2)
+        # Charts Section - Split Left & Right
+        charts_container = QWidget()
+        charts_layout = QHBoxLayout(charts_container)  # Horizontal layout → side by side
+        charts_layout.setSpacing(40)
 
-        # Card 4: Overdue Books
-        grid_layout.addWidget(self.create_summary_card(
-            "⚠️", "Overdue Books", f"{overdue_books}", "#e74c3c"), 1, 0)
+        # LEFT: Borrowing Trends - Line Chart
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setSpacing(10)
 
-        # Card 5: Unpaid Fines
-        grid_layout.addWidget(self.create_summary_card(
-            "💸", "Unpaid Fines", f"{total_unpaid_fines:,} VND", "#9b59b6"), 1, 1)
+        trend_title = QLabel("Borrowing Trends (Last 12 Months)")
+        trend_title.setObjectName("chartTitle")
+        left_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        left_layout.addWidget(trend_title)
 
-        # Optional: Add stretch to center if fewer cards
-        grid_layout.addWidget(QWidget(), 1, 2)  # Empty spacer
+        trend_fig = Figure(figsize=(8, 4), dpi=100)  # Slightly smaller for side-by-side
+        trend_canvas = FigureCanvas(trend_fig)
+        ax1 = trend_fig.add_subplot(111)
 
-        layout.addLayout(grid_layout)
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        borrows = [85, 92, 110, 105, 130, 145, 160, 152, 138, 125, 115, 140]
+
+        ax1.plot(months, borrows, marker='o', color='#3498db', linewidth=2.5)
+        ax1.set_xlabel("Month")
+        ax1.set_ylabel("Borrows")
+        ax1.grid(True, linestyle='--', alpha=0.7)
+        trend_canvas.setMinimumHeight(380)
+        left_layout.addWidget(trend_canvas)
+
+        charts_layout.addWidget(left_widget, stretch=1)
+
+        # RIGHT: Books by Category - Bar Chart
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        right_layout.setSpacing(10)
+
+        cat_title = QLabel("Total Books by Category")
+        cat_title.setObjectName("chartTitle")
+        right_layout.addWidget(cat_title)
+
+        cat_fig = Figure(figsize=(8, 4), dpi=100)
+        cat_canvas = FigureCanvas(cat_fig)
+        ax2 = cat_fig.add_subplot(111)
+
+        categories = ['Fiction', 'Science', 'History', 'Tech', 'Literature', 'Others']
+        counts = [420, 280, 190, 150, 110, 97]
+
+        bars = ax2.bar(categories, counts, color=['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6', '#95a5a6'])
+        ax2.set_ylabel("Number of Books")
+        ax2.grid(axis='y', linestyle='--', alpha=0.7)
+
+        for bar in bars:
+            yval = bar.get_height()
+            ax2.text(bar.get_x() + bar.get_width() / 2, yval + 5, int(yval), ha='center', va='bottom')
+
+        cat_canvas.setMinimumHeight(380)
+        right_layout.addWidget(cat_canvas)
+
+        charts_layout.addWidget(right_widget, stretch=1)
+
+        layout.addWidget(charts_container)
         layout.addStretch()
 
         return widget
 
-    def create_summary_card(self, icon, title, value, color):
+    def _create_summary_card(self, title, value, color):
         card = QWidget()
         card.setObjectName("summaryCard")
-        card.setFixedHeight(180)
-        card.setStyleSheet(f"""
-            QWidget#summaryCard {{
-                background-color: white;
-                border-radius: 16px;
-                border: 1px solid #e0e0e0;
-            }}
-            QWidget#summaryCard:hover {{
-                transform: translateY(-5px);
-                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            }}
-        """)
 
-        card_layout = QVBoxLayout(card)
-        card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        card_layout.setSpacing(15)
+        layout = QVBoxLayout(card)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setSpacing(12)
 
-        # Icon
-        icon_label = QLabel(icon)
-        icon_label.setStyleSheet(f"font-size: 48px; color: {color};")
-        card_layout.addWidget(icon_label)
+        val_lbl = QLabel(value)
+        val_lbl.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {color};")
+        val_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(val_lbl)
 
-        # Value (big number)
-        value_label = QLabel(value)
-        value_label.setObjectName("cardValue")
-        value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        value_label.setStyleSheet(f"color: {color};")
-
-        card_layout.addWidget(value_label)
-
-        # Title
-        title_label = QLabel(title)
-        title_label.setObjectName("cardTitle")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        card_layout.addWidget(title_label)
+        title_lbl = QLabel(title)
+        title_lbl.setObjectName("cardTitle")
+        title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_lbl)
 
         return card
 
