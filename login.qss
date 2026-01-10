@@ -1,0 +1,91 @@
+/* Background */
+QWidget {
+    background-color: white;
+    color: black;
+    font-family: "Comfortaa";
+}
+
+/* "Login" Title */
+QLabel#loginTitle {
+    font-family: "Comfortaa";
+    font-size: 30pt;
+    font-weight: bold;
+    qproperty-alignment: 'AlignCenter';
+    margin-top: 50px;
+    margin-bottom: 20px;
+    padding-bottom: 0px;
+}
+
+/* Username Input */
+QLineEdit#usernameInput {
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    margin: 5px 50px;
+    background-color: #f8f9fa;
+}
+
+/* Password Input */
+QLineEdit#passwordInput {
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    margin: 5px 50px;
+    background-color: #f8f9fa;
+}
+
+/* Login Button */
+QPushButton#loginButton {
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #0078d7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    margin: 10px 50px;
+    min-height: 45px;
+}
+
+QPushButton:hover {
+    background-color: #005fa3;
+}
+
+/* Checkbox */
+QCheckBox#rememberCheckbox {
+    font-size: 14px;
+    color: #555;
+    spacing: 8px;
+    margin: 10px 50px;
+    padding: 5px 0;
+}
+
+QCheckBox#rememberCheckbox::indicator {
+    width: 15px;
+    height: 15px;
+    border: 2px solid #bdc3c7;
+    border-radius: 4px;
+    background-color: white;
+}
+
+QCheckBox#rememberCheckbox::indicator:checked {
+    background-color: #3498db;
+    border-color: #3498db;
+}
+/* "Don't have an account" */
+QPushButton#createAccountButton {
+    font-size: 14px;
+    color: #555;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 17px 60px 20px 0;
+    text-decoration: underline;
+}
+
+QPushButton#createAccountButton:hover {
+    color: #005fa3;
+    text-decoration: underline;
+}
