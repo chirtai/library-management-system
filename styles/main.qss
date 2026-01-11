@@ -217,3 +217,10 @@ QLabel#chartTitle {
     text-align: center;
 }
 
+QListWidget::item[text*="Sign Out"] {
+    background-color: #fee2e2 !important;    /* Nền đỏ nhạt */
+    color: #dc2626 !important;               /* Chữ đỏ đậm */
+    font-weight: bold;
+    border-top: 2px solid #fecaca;
+    padding: 20px 20px;
+}

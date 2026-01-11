@@ -1,16 +1,16 @@
 import sys
+import matplotlib
+matplotlib.use('QtAgg')
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QStackedWidget, QListWidget,
-    QTableWidget, QSplitter,
-QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout,
-)
+    QTableWidget, QSplitter, QListWidgetItem,
+    QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout)
 from PyQt6.QtCore import Qt
 from pathlib import Path
-
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -104,10 +104,13 @@ class MainWindow(QMainWindow):
     def on_sidebar_clicked(self, item):
         row = self.sidebar.row(item)
 
+        # Các trang khác bình thường
+        self.stacked_widget.setCurrentIndex(row)
+
         # Always switch to the clicked page first
         self.stacked_widget.setCurrentIndex(row)
 
-        # If it's Dashboard (index 0), refresh it
+        # Refresh when click the tab in sidebar
         if row < len(self.sidebar):
             self.refresh_dashboard()
 
@@ -334,6 +337,28 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         return widget
 
+    def closeEvent(self, event):
+        try:
+            plt.close('all')
+            for child in self.findChildren(FigureCanvas):
+                child.figure.clear()
+                child.deleteLater()
+        except Exception as e:
+            print("Matplotlib cleanup error:", e)
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Thoát ứng dụng")
+        msg.setText("Bạn có muốn thoát không?")
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg.setDefaultButton(QMessageBox.StandardButton.No)
+
+        reply = msg.exec()
+
+        if reply == QMessageBox.StandardButton.Yes:
+            event.accept()
+        else:
+            event.ignore()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit,
     QPushButton, QVBoxLayout, QMessageBox,
@@ -7,6 +8,7 @@ from PyQt6.QtWidgets import (
     QGridLayout, QCalendarWidget
 )
 from PyQt6.QtCore import Qt, QDate
+from logic.auth_service import AuthService
 
 class RegisterWindow(QWidget):
     def __init__(self):
@@ -15,11 +17,14 @@ class RegisterWindow(QWidget):
         self.resize(1000, 750)
 
         # Load QSS
+        BASE_DIR = Path(__file__).resolve().parent.parent
+        QSS_PATH = BASE_DIR / "styles" / "register.qss"
+
         try:
-            with open("register.qss", "r") as f:
+            with open(QSS_PATH, "r", encoding="utf-8") as f:
                 self.setStyleSheet(f.read())
         except Exception as e:
-            print("Warning: register.qss not found or invalid.")
+            print("Warning: main.qss not found:", e)
 
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -172,16 +177,77 @@ class RegisterWindow(QWidget):
 
         # Back to Login button
         btn_back = QPushButton("Back to Login")
+        btn_back.clicked.connect(self.back_to_login)
         btn_back.setObjectName("backButton")
         buttons_layout.addWidget(btn_back)
         buttons_layout.addStretch()
 
         # Register button
         btn_register = QPushButton("Create Account")
+        btn_register.clicked.connect(self.handle_register)
         btn_register.setObjectName("registerSubmitButton")
         btn_register.setMinimumHeight(45)
         buttons_layout.addWidget(btn_register)
         main_layout.addLayout(buttons_layout)
+
+    def back_to_login(self):
+        from login_ui import LoginWindow
+        self.login_window = LoginWindow()
+        self.login_window.show()
+        self.close()
+
+    def handle_register(self):
+        first_name = self.input_firstname.text().strip()
+        last_name = self.input_lastname.text().strip()
+        full_name = f"{first_name} {last_name}".strip()
+
+        email = self.input_email.text().strip()
+        phone = self.input_phone.text().strip()
+        username = self.input_username.text().strip()
+        password = self.input_password.text()
+        confirm = self.input_confirm.text()
+
+        # Lấy giới tính
+        gender = None
+        if self.radio_male.isChecked():
+            gender = "Male"
+        elif self.radio_female.isChecked():
+            gender = "Female"
+        elif self.radio_other.isChecked():
+            gender = "Other"
+
+        dob = self.input_dob.date().toString("yyyy-MM-dd")
+
+        # Validation cơ bản
+        if not all([full_name, email, username, password]):
+            QMessageBox.warning(self, "Lỗi", "Vui lòng điền đầy đủ các trường bắt buộc!")
+            return
+
+        if password != confirm:
+            QMessageBox.warning(self, "Lỗi", "Mật khẩu xác nhận không khớp!")
+            return
+
+        if len(password) < 8:
+            QMessageBox.warning(self, "Lỗi", "Mật khẩu phải ít nhất 8 ký tự!")
+            return
+
+        # Chuẩn bị data gửi đi register
+        data = {
+            'username': username,
+            'password': password,
+            'full_name': full_name,
+            'email': email,
+            'phone': phone if phone else None,
+            # có thể thêm gender, dob nếu bạn sửa bảng Users
+        }
+
+        success, message = AuthService.register_user(data)
+
+        if success:
+            QMessageBox.information(self, "Thành công", message)
+            self.back_to_login()  # quay về login
+        else:
+            QMessageBox.warning(self, "Đăng ký thất bại", message)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

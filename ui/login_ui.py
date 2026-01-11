@@ -1,9 +1,11 @@
 import sys
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit,
     QPushButton, QVBoxLayout, QMessageBox, QCheckBox, QHBoxLayout,
 )
 from PyQt6.QtCore import Qt
+from logic.auth_service import AuthService
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -12,11 +14,14 @@ class LoginWindow(QWidget):
         self.resize(500, 500)
 
         # Load QSS
+        BASE_DIR = Path(__file__).resolve().parent.parent
+        QSS_PATH = BASE_DIR / "styles" / "login.qss"
+
         try:
-            with open("login.qss", "r") as f:
+            with open(QSS_PATH, "r", encoding="utf-8") as f:
                 self.setStyleSheet(f.read())
         except Exception as e:
-            print("Warning: login.qss not found or invalid.")
+            print("Warning: main.qss not found:", e)
 
         # Main Layout
         main_layout = QVBoxLayout(self)
@@ -65,12 +70,48 @@ class LoginWindow(QWidget):
 
         main_layout.addLayout(bottom_layout)
         main_layout.addStretch()
+
     def check_login(self):
-        username = self.input_username.text()
-        password = self.input_password.text()
+        username = self.input_username.text().strip()
+        password = self.input_password.text().strip()
+
+        if not username or not password:
+            QMessageBox.warning(self, "Lỗi", "Vui lòng nhập đầy đủ thông tin!")
+            return
+
+        success, user_info, message = AuthService.login(username, password)
+
+        if success:
+            # Lưu thông tin user (có thể dùng global, session, hoặc truyền trực tiếp)
+            QMessageBox.information(self, "Thành công",
+                                    f"Chào mừng {user_info['full_name']}!\nVai trò: {user_info['role']}")
+
+            # === PHẦN QUAN TRỌNG: Mở MainWindow và truyền thông tin user ===
+            from main_ui import MainWindow  # import ở đây để tránh circular import
+
+            self.main_window = MainWindow()
+            # Truyền thông tin user thật vào (thay vì hardcode Administrator)
+            self.main_window.current_user = {
+                "name": user_info['full_name'],
+                "role": user_info['role'],
+                "user_id": user_info['user_id']  # nếu cần sau này
+            }
+
+            # Cập nhật lại sidebar theo role thật
+            self.main_window.setup_sidebar_by_role()
+
+            self.main_window.show()
+            self.close()  # Đóng cửa sổ login
+
+        else:
+            QMessageBox.warning(self, "Đăng nhập thất bại", message)
 
     def check_create_account(self):
-        pass
+        # Mở cửa sổ Register
+        from register_ui import RegisterWindow   # import ở đây để tránh circular import
+        self.register_window = RegisterWindow()
+        self.register_window.show()
+        self.close()  # hoặc ẩn login window nếu muốn quay lại sau
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

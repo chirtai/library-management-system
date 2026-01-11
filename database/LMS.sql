@@ -87,3 +87,20 @@ CREATE TABLE Payments (
     FOREIGN KEY (staff_id) REFERENCES Users(user_id)
 );
 
+SELECT * FROM Users
+
+SELECT 
+    user_id,
+    username,
+    full_name,
+    email,
+    phone,
+    role,
+    status,
+    created_at
+FROM Users
+WHERE status = 'PENDING';
+
+UPDATE Users
+SET status = 'ACTIVE'
+WHERE user_id = 1;
