@@ -38,17 +38,32 @@ QHeaderView::section {
 /* Tables */
 QTableWidget {
     background-color: white;
+    font-size: 14px;
     gridline-color: #e0e0e0;
-    alternate-background-color: #f8fbff;
-    selection-background-color: #3498db;
     border: 1px solid #dcdcdc;
     border-radius: 8px;
 }
 
 QTableWidget::item {
-    padding: 10px;
+    color: black;
+    min-height: 50px;
 }
 
+
+QTableWidget::verticalHeader {
+    width: 50px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+}
+
+QHeaderView::section:vertical {
+    background-color: #3498db;
+    border: 1px solid #dcdcdc;
+    padding: 4px;
+    min-width: 50px;                /* đảm bảo không bị nhỏ quá */
+}
 /* Tab Widget */
 QTabWidget::pane {
     border: 1px solid #dcdcdc;
@@ -223,4 +238,11 @@ QListWidget::item[text*="Sign Out"] {
     font-weight: bold;
     border-top: 2px solid #fecaca;
     padding: 20px 20px;
+}
+
+QMessageBox {
+    background-color: #ffffff;          /* nền trắng cho light mode */
+    color: #333333;                     /* chữ tối */
+    font-family: "Segoe UI", Arial;
+    font-size: 13px;
 }

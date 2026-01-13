@@ -76,42 +76,37 @@ class LoginWindow(QWidget):
         password = self.input_password.text().strip()
 
         if not username or not password:
-            QMessageBox.warning(self, "Lỗi", "Vui lòng nhập đầy đủ thông tin!")
+            QMessageBox.warning(self, "Error", "Please enter your username and password!")
             return
-
         success, user_info, message = AuthService.login(username, password)
-
         if success:
-            # Lưu thông tin user (có thể dùng global, session, hoặc truyền trực tiếp)
-            QMessageBox.information(self, "Thành công",
-                                    f"Chào mừng {user_info['full_name']}!\nVai trò: {user_info['role']}")
-
-            # === PHẦN QUAN TRỌNG: Mở MainWindow và truyền thông tin user ===
-            from main_ui import MainWindow  # import ở đây để tránh circular import
-
+            # Insert user infos
+            from main_ui import MainWindow
             self.main_window = MainWindow()
-            # Truyền thông tin user thật vào (thay vì hardcode Administrator)
             self.main_window.current_user = {
+                "user_id": user_info['user_id'],
                 "name": user_info['full_name'],
-                "role": user_info['role'],
-                "user_id": user_info['user_id']  # nếu cần sau này
+                "role": user_info['role']
             }
 
-            # Cập nhật lại sidebar theo role thật
+            # Update sidebar by role
             self.main_window.setup_sidebar_by_role()
+            self.main_window.update_ui_by_role()
+            # Redirect to Dashboard
+            self.main_window.stacked_widget.setCurrentIndex(0)
+            self.main_window.sidebar.setCurrentRow(0)
 
             self.main_window.show()
-            self.close()  # Đóng cửa sổ login
-
+            self.close()
         else:
-            QMessageBox.warning(self, "Đăng nhập thất bại", message)
+            QMessageBox.warning(self, "Sign in failed", message)
 
     def check_create_account(self):
-        # Mở cửa sổ Register
-        from register_ui import RegisterWindow   # import ở đây để tránh circular import
+        # Open Register Window
+        from ui.register_ui import RegisterWindow
         self.register_window = RegisterWindow()
         self.register_window.show()
-        self.close()  # hoặc ẩn login window nếu muốn quay lại sau
+        self.close()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -2,14 +2,11 @@ import pyodbc
 
 class Database:
     def __init__(self):
-        # Thay đổi thông tin kết nối theo máy bạn
         self.conn_str = (
             r"DRIVER={ODBC Driver 17 for SQL Server};"
-            r"SERVER=localhost\SQLEXPRESS;"               # hoặc tên server của bạn (.\SQLEXPRESS, IP,...)
+            r"SERVER=localhost\SQLEXPRESS;"    
             r"DATABASE=LibraryManagement;"
-            r"Trusted_Connection=yes;"         # dùng Windows Authentication
-            # Nếu dùng SQL Authentication thì thay bằng:
-            # r"UID=sa;PWD=your_password;"
+            r"Trusted_Connection=yes;"
         )
         self.conn = None
         self.cursor = None
@@ -18,9 +15,9 @@ class Database:
         try:
             self.conn = pyodbc.connect(self.conn_str)
             self.cursor = self.conn.cursor()
-            print("Kết nối SQL Server thành công!")
+            print("Connected to database!")
         except Exception as e:
-            print("Lỗi kết nối database:", e)
+            print("Database connection error!", e)
             return False
         return True
 
@@ -43,19 +40,19 @@ class Database:
 
             if commit:
                 self.conn.commit()
+                return True
 
-            if fetch:
-                return self.cursor.fetchall()
             elif fetch == "one":
                 return self.cursor.fetchone()
-            return True
+            elif fetch:
+                return self.cursor.fetchall()  # list of tuples
+            else:
+                return True
         except Exception as e:
-            print("Lỗi truy vấn:", e)
+            print("Error", e)
             self.conn.rollback()
             return None
 
     def __del__(self):
         self.disconnect()
-
-# Tạo instance dùng chung (singleton style)
 db = Database()

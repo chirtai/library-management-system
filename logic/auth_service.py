@@ -5,14 +5,13 @@ class AuthService:
     @staticmethod
     def register_user(data: dict) -> tuple[bool, str]:
         try:
-            # Kiểm tra username hoặc email đã tồn tại
             exists = db.execute_query(
                 "SELECT 1 FROM Users WHERE username = ? OR email = ?",
                 (data['username'], data['email']),
                 fetch="one"
             )
             if exists:
-                return False, "Tên đăng nhập hoặc email đã tồn tại"
+                return False, "Username and email are already exists"
 
             # Hash password
             hashed = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
@@ -31,11 +30,11 @@ class AuthService:
             ), commit=True)
 
             if success:
-                return True, "Đăng ký thành công! Chờ admin phê duyệt"
-            return False, "Đăng ký thất bại (lỗi database)"
+                return True, "Register Successfully, Waiting for Approval..."
+            return False, "Register Failed"
         except Exception as e:
             print("Register error:", e)
-            return False, f"Lỗi hệ thống: {str(e)}"
+            return False, f"System Error: {str(e)}"
 
     @staticmethod
     def login(username: str, password: str) -> tuple[bool, dict | None, str]:
@@ -44,17 +43,16 @@ class AuthService:
             (username,),
             fetch="one"
         )
-
         if not result:
-            return False, None, "Tài khoản không tồn tại"
+            return False, None, "Account not exist"
 
         user_id, uname, full_name, role, status, hashed_pw = result
 
         if status != 'ACTIVE':
-            return False, None, f"Tài khoản chưa được kích hoạt (trạng thái: {status})"
+            return False, None, f"Account is not activated (status: {status})"
 
         if not bcrypt.checkpw(password.encode('utf-8'), hashed_pw.encode('utf-8')):
-            return False, None, "Mật khẩu không đúng"
+            return False, None, "Wrong password!"
 
         user_info = {
             'user_id': user_id,
@@ -62,4 +60,4 @@ class AuthService:
             'full_name': full_name,
             'role': role
         }
-        return True, user_info, "Đăng nhập thành công"
+        return True, user_info, "Sign In Successfully"

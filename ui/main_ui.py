@@ -1,5 +1,11 @@
 import sys
 import matplotlib
+from fontTools.merge import layout
+from logic.members import Member
+
+
+
+
 matplotlib.use('QtAgg')
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -7,7 +13,7 @@ import matplotlib.pyplot as plt
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QStackedWidget, QListWidget,
-    QTableWidget, QSplitter, QListWidgetItem,
+    QTableWidget, QSplitter, QListWidgetItem, QInputDialog, QTableWidgetItem,
     QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout)
 from PyQt6.QtCore import Qt
 from pathlib import Path
@@ -17,10 +23,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Library Management System")
         self.resize(1500, 900)
-        self.current_user = {
-            "name": "Administrator",
-            "role": "ADMIN"  # Options: "ADMIN", "LIBRARIAN", "MEMBER"
-        }
+        self.current_user = None
 
         # Load QSS
         BASE_DIR = Path(__file__).resolve().parent.parent
@@ -87,33 +90,74 @@ class MainWindow(QMainWindow):
         self.setup_sidebar_by_role()
 
     def setup_sidebar_by_role(self):
-        role = self.current_user["role"]
+        if not self.current_user or "role" not in self.current_user:
+            return
+
+        role = self.current_user["role"].upper()
         self.sidebar.clear()
 
+        # Default Sidebar for every role
         menu_items = ["Dashboard", "Books Management", "Borrowing"]
 
         if role in ["ADMIN", "LIBRARIAN"]:
-            menu_items += ["Members Management", "Fines Management"]
+            menu_items.extend(["Members Management", "Fines Management"])
 
         for item in menu_items:
             self.sidebar.addItem(item)
 
         # Set default page
-        self.sidebar.setCurrentRow(0)
+        if menu_items:
+            self.sidebar.setCurrentRow(0)
 
     def on_sidebar_clicked(self, item):
+        if self.current_user is None:
+            QMessageBox.warning(self, "Lỗi", "Phiên đăng nhập không hợp lệ")
+            return
+
         row = self.sidebar.row(item)
+        page_name = item.text().strip()
 
-        # Các trang khác bình thường
-        self.stacked_widget.setCurrentIndex(row)
+        # Các trang chỉ ADMIN/LIBRARIAN được xem hoặc thao tác
+        restricted_pages = {
+            "Members Management": ["ADMIN"],
+            "Fines Management": ["ADMIN", "LIBRARIAN"],
+            # "Books Management": ["ADMIN", "LIBRARIAN"]   # nếu muốn hạn chế cả việc xem
+        }
 
-        # Always switch to the clicked page first
+        if page_name in restricted_pages:
+            allowed_roles = restricted_pages[page_name]
+            if self.current_user.get("role") not in allowed_roles:
+                QMessageBox.warning(
+                    self,
+                    "Truy cập bị từ chối",
+                    f"Chỉ {', '.join(allowed_roles)} mới được truy cập chức năng này."
+                )
+                self.sidebar.setCurrentRow(0)
+                self.stacked_widget.setCurrentIndex(0)
+                return
+
+        # Nếu hợp lệ → chuyển trang
         self.stacked_widget.setCurrentIndex(row)
 
         # Refresh when click the tab in sidebar
         if row < len(self.sidebar):
             self.refresh_dashboard()
 
+    def update_ui_by_role(self):
+        if self.current_user is None:
+            print("WARNING: current_user is None in update_ui_by_role")
+            return
+
+        role = self.current_user.get("role", "").upper()
+        #print(f"DEBUG update_ui_by_role: role = {role}")  # debug
+
+        show_buttons = role in ["ADMIN", "LIBRARIAN"]
+
+        if hasattr(self, 'btn_add_book'):
+            self.btn_add_book.setVisible(show_buttons)
+            self.btn_edit_book.setVisible(show_buttons)
+            self.btn_delete_book.setVisible(show_buttons)
+            #print(f"Buttons visible: {show_buttons}")  # debug
     def refresh_dashboard(self):
         QMessageBox.information(self, "Dashboard", "Dashboard đã tự động làm mới!")
 
@@ -265,18 +309,19 @@ class MainWindow(QMainWindow):
         layout.addWidget(table)
 
         # Buttons (Add, Edit, Delete - visible only to Admin/Librarian)
-        if self.current_user["role"] in ["ADMIN", "LIBRARIAN"]:
-            btn_layout = QHBoxLayout()
-            add_btn = QPushButton("Add New Book")
-            edit_btn = QPushButton("Edit Selected")
-            delete_btn = QPushButton("Delete Selected")
-            for btn in [add_btn, edit_btn, delete_btn]:
-                btn.setFixedHeight(35)
-            btn_layout.addStretch()
-            btn_layout.addWidget(add_btn)
-            btn_layout.addWidget(edit_btn)
-            btn_layout.addWidget(delete_btn)
-            layout.addLayout(btn_layout)
+        self.books_action_layout = QHBoxLayout()
+        self.books_action_layout.addStretch()
+
+        self.btn_add_book = QPushButton("Add Book")
+        self.btn_edit_book = QPushButton("Edit Selected")
+        self.btn_delete_book = QPushButton("Delete Selected")
+
+        for btn in [self.btn_add_book, self.btn_edit_book, self.btn_delete_book]:
+            btn.setFixedHeight(35)
+            # btn.setObjectName("actionButton")  # nếu muốn style riêng
+            self.books_action_layout.addWidget(btn)
+
+        layout.addLayout(self.books_action_layout)
 
         widget.setLayout(layout)
         return widget
@@ -318,14 +363,6 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         main_layout = QVBoxLayout(widget)
 
-        # Need ADMIN permission to access all functions
-        if self.current_user["role"] != "ADMIN":
-            label = QLabel("You don't have permission to see this page.")
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label.setStyleSheet("font-size: 18px; color: #e74c3c;")
-            main_layout.addWidget(label)
-            main_layout.addStretch()
-            return widget
 
         # Create Tab Widget
         tabs = QTabWidget()
@@ -365,43 +402,36 @@ class MainWindow(QMainWindow):
         self.pending_table.setHorizontalHeaderLabels([
             "ID", "Full Name", "Email", "Phone Number", "Register date", "Reason", "Action"
         ])
-        self.pending_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        header = self.pending_table.horizontalHeader()
+        for col in range(6):  # 0 đến 5
+            header.setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+        self.pending_table.setColumnWidth(6, 200)
+        self.pending_table.verticalHeader().setDefaultSectionSize(60)
         self.pending_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         pending_layout.addWidget(self.pending_table)
 
         # Approve / Reject All Buttons
         action_layout = QHBoxLayout()
         action_layout.addStretch()
-        approve_all_btn = QPushButton("Approve All")
-        reject_all_btn = QPushButton("Reject All")
-        action_layout.addWidget(approve_all_btn)
-        action_layout.addWidget(reject_all_btn)
+        self.approve_all_btn = QPushButton("Approve All")
+        self.reject_all_btn = QPushButton("Reject All")
+        action_layout.addWidget(self.approve_all_btn)
+        action_layout.addWidget(self.reject_all_btn)
         pending_layout.addLayout(action_layout)
 
         tabs.addTab(pending_tab, "Pending Members")
 
-        # Approve / Reject Buttons in "Action"
-        action_widget = QWidget()
-        action_layout = QHBoxLayout(action_widget)
-        action_layout.setContentsMargins(4, 2, 4, 2)
-        action_layout.setSpacing(8)
-
-        btn_approve = QPushButton("Approve")
-        btn_reject = QPushButton("Reject")
-        btn_approve.setFixedWidth(80)
-        btn_reject.setFixedWidth(80)
-
-        # Connect Buttons
-
-
-
-        #
-        action_layout.addWidget(btn_approve)
-        action_layout.addWidget(btn_reject)
-        action_layout.addStretch()
-
-        # ── Kết hợp lại ──────────────────────────────────────────────────
         main_layout.addWidget(tabs)
+
+        # Kết nối nút Approve/Reject All (phiên bản đơn giản - approve/reject tất cả pending)
+        self.approve_all_btn.clicked.connect(self.approve_all_pending)
+        self.reject_all_btn.clicked.connect(self.reject_all_pending)
+
+        # Load dữ liệu lần đầu
+        self.load_pending_members()
+        self.load_approved_members()
+
         return widget
 
 
@@ -439,6 +469,146 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
+
+    def load_pending_members(self):
+        results = Member.get_pending_members()
+
+        self.pending_table.setRowCount(len(results))
+        for row, record in enumerate(results):
+            try:
+                user_id = record[0] if len(record) > 0 else None
+                full_name = record[1] if len(record) > 1 else ""
+                email = record[2] if len(record) > 2 else ""
+                phone = record[3] if len(record) > 3 else ""
+                reg_date = record[4] if len(record) > 4 else ""
+                reason = ""  # Vì đã bỏ cột reason
+
+                self.pending_table.setItem(row, 0, QTableWidgetItem(str(user_id)))
+                self.pending_table.setItem(row, 1, QTableWidgetItem(full_name or ""))
+                self.pending_table.setItem(row, 2, QTableWidgetItem(email or ""))
+                self.pending_table.setItem(row, 3, QTableWidgetItem(phone or ""))
+                self.pending_table.setItem(row, 4, QTableWidgetItem(reg_date or ""))
+                self.pending_table.setItem(row, 5, QTableWidgetItem(reason))
+            except Exception as e:
+                print(f"Error filling pending row {row}: {str(e)}")
+                print("Record data:", record)
+
+            # Action buttons
+            action_widget = QWidget()
+            hbox = QHBoxLayout(action_widget)
+            hbox.setContentsMargins(4, 2, 4, 2)
+            hbox.setSpacing(8)
+
+            hbox.addStretch(1)
+
+            btn_approve = QPushButton("Approve")
+            btn_reject = QPushButton("Reject")
+            btn_approve.setFixedWidth(90)
+            btn_reject.setFixedWidth(90)
+
+            btn_approve.clicked.connect(lambda checked, uid = user_id: self.approve_pending(uid))
+            btn_reject.clicked.connect(lambda checked, uid = user_id: self.reject_pending(uid))
+
+            hbox.addWidget(btn_approve)
+            hbox.addWidget(btn_reject)
+            hbox.addStretch(1)
+
+            self.pending_table.setCellWidget(row, 6, action_widget)
+
+    def load_approved_members(self):
+        results = Member.get_approved_members()
+
+        self.approved_table.setRowCount(len(results))
+        for row, record in enumerate(results):
+            try:
+                # Unpack an toàn hơn
+                user_id = record[0] if len(record) > 0 else None
+                full_name = record[1] if len(record) > 1 else ""
+                email = record[2] if len(record) > 2 else ""
+                phone = record[3] if len(record) > 3 else ""
+                reg_date = record[4] if len(record) > 4 else ""
+                status = record[5] if len(record) > 5 else ""
+
+                self.approved_table.setItem(row, 0, QTableWidgetItem(str(user_id or "")))
+                self.approved_table.setItem(row, 1, QTableWidgetItem(str(full_name or "")))
+                self.approved_table.setItem(row, 2, QTableWidgetItem(str(email or "")))
+                self.approved_table.setItem(row, 3, QTableWidgetItem(str(phone or "")))
+                self.approved_table.setItem(row, 4, QTableWidgetItem(str(reg_date or "")))
+                self.approved_table.setItem(row, 5, QTableWidgetItem(str(status or "")))
+            except Exception as e:
+                print(f"Error filling row {row}: {str(e)}")
+                print("Record data:", record)
+
+    def approve_pending(self, user_id):
+        if Member.approve_member(user_id):
+            QMessageBox.information(self, "Thành công", f"Đã duyệt thành viên ID {user_id}")
+            self.load_pending_members()
+            self.load_approved_members()
+        else:
+            QMessageBox.critical(self, "Lỗi", "Không thể duyệt thành viên")
+
+    def reject_pending(self, user_id):
+        reason, ok = QInputDialog.getText(
+            self,
+            "Từ chối thành viên",
+            "Lý do từ chối (có thể bỏ trống):",
+            QLineEdit.Normal
+        )
+
+        if ok:
+            if Member.reject_member(user_id, reason):
+                QMessageBox.information(self, "Thành công", f"Đã từ chối thành viên ID {user_id}")
+                self.load_pending_members()
+            else:
+                QMessageBox.critical(self, "Lỗi", "Không thể từ chối thành viên")
+
+    def approve_all_pending(self):
+        reply = QMessageBox.question(
+            self, "Xác nhận",
+            "Bạn có chắc muốn DUYỆT TẤT CẢ thành viên đang chờ duyệt?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            # Lấy tất cả user_id từ pending table
+            user_ids = []
+            for row in range(self.pending_table.rowCount()):
+                item = self.pending_table.item(row, 0)
+                if item:
+                    user_ids.append(int(item.text()))
+
+            if user_ids:
+                count = Member.approve_multiple_members(user_ids)
+                QMessageBox.information(self, "Hoàn tất", f"Đã duyệt thành công {count} thành viên")
+                self.load_pending_members()
+                self.load_approved_members()
+
+    def reject_all_pending(self):
+        reason, ok = QInputDialog.getText(
+            self,
+            "Từ chối tất cả",
+            "Lý do từ chối tất cả (có thể bỏ trống):",
+            QLineEdit.Normal
+        )
+
+        if ok:
+            reply = QMessageBox.question(
+                self, "Xác nhận",
+                "Bạn có chắc muốn TỪ CHỐI TẤT CẢ thành viên đang chờ duyệt?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+
+            if reply == QMessageBox.StandardButton.Yes:
+                user_ids = []
+                for row in range(self.pending_table.rowCount()):
+                    item = self.pending_table.item(row, 0)
+                    if item:
+                        user_ids.append(int(item.text()))
+
+                if user_ids:
+                    count = Member.reject_multiple_members(user_ids, reason)
+                    QMessageBox.information(self, "Hoàn tất", f"Đã từ chối thành công {count} thành viên")
+                    self.load_pending_members()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
