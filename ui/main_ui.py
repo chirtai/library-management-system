@@ -316,14 +316,94 @@ class MainWindow(QMainWindow):
 
     def create_members_page(self):
         widget = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout(widget)
 
-        table = QTableWidget(0, 5)
-        table.setHorizontalHeaderLabels(["ID", "Full Name", "Email", "Phone", "Status"])
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        layout.addWidget(table)
-        widget.setLayout(layout)
+        # Need ADMIN permission to access all functions
+        if self.current_user["role"] != "ADMIN":
+            label = QLabel("You don't have permission to see this page.")
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet("font-size: 18px; color: #e74c3c;")
+            main_layout.addWidget(label)
+            main_layout.addStretch()
+            return widget
+
+        # Create Tab Widget
+        tabs = QTabWidget()
+        tabs.setDocumentMode(True)
+        tabs.setTabPosition(QTabWidget.TabPosition.North)
+
+        # Tab 1: Approved Members
+        approved_tab = QWidget()
+        approved_layout = QVBoxLayout(approved_tab)
+
+        # Search + Filter bar
+        search_layout = QHBoxLayout()
+        search_input = QLineEdit()
+        search_input.setPlaceholderText("Search by Name, Phone Number, ...")
+        search_btn = QPushButton("Search")
+        search_layout.addWidget(search_input, 1)
+        search_layout.addWidget(search_btn)
+        approved_layout.addLayout(search_layout)
+
+        # Table thành viên đã duyệt
+        self.approved_table = QTableWidget(0, 6)
+        self.approved_table.setHorizontalHeaderLabels([
+            "ID", "Full Name", "Email", "Phone Number", "Register date", "Status"
+        ])
+        self.approved_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.approved_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        approved_layout.addWidget(self.approved_table)
+
+        tabs.addTab(approved_tab, "Approved Members")
+
+        # ── Tab 2: Pending Approvals ─────────────────────────────────────
+        pending_tab = QWidget()
+        pending_layout = QVBoxLayout(pending_tab)
+
+        # Table chờ duyệt
+        self.pending_table = QTableWidget(0, 7)
+        self.pending_table.setHorizontalHeaderLabels([
+            "ID", "Full Name", "Email", "Phone Number", "Register date", "Reason", "Action"
+        ])
+        self.pending_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.pending_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        pending_layout.addWidget(self.pending_table)
+
+        # Approve / Reject All Buttons
+        action_layout = QHBoxLayout()
+        action_layout.addStretch()
+        approve_all_btn = QPushButton("Approve All")
+        reject_all_btn = QPushButton("Reject All")
+        action_layout.addWidget(approve_all_btn)
+        action_layout.addWidget(reject_all_btn)
+        pending_layout.addLayout(action_layout)
+
+        tabs.addTab(pending_tab, "Pending Members")
+
+        # Approve / Reject Buttons in "Action"
+        action_widget = QWidget()
+        action_layout = QHBoxLayout(action_widget)
+        action_layout.setContentsMargins(4, 2, 4, 2)
+        action_layout.setSpacing(8)
+
+        btn_approve = QPushButton("Approve")
+        btn_reject = QPushButton("Reject")
+        btn_approve.setFixedWidth(80)
+        btn_reject.setFixedWidth(80)
+
+        # Connect Buttons
+
+
+
+        #
+        action_layout.addWidget(btn_approve)
+        action_layout.addWidget(btn_reject)
+        action_layout.addStretch()
+
+        # ── Kết hợp lại ──────────────────────────────────────────────────
+        main_layout.addWidget(tabs)
         return widget
+
 
     def create_fines_page(self):
         widget = QWidget()
@@ -347,8 +427,8 @@ class MainWindow(QMainWindow):
             print("Matplotlib cleanup error:", e)
 
         msg = QMessageBox(self)
-        msg.setWindowTitle("Thoát ứng dụng")
-        msg.setText("Bạn có muốn thoát không?")
+        msg.setWindowTitle("Exit")
+        msg.setText("Sign out and exit?")
         msg.setIcon(QMessageBox.Icon.Question)
         msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         msg.setDefaultButton(QMessageBox.StandardButton.No)
