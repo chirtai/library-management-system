@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
 
         # Main layout: header + splitter (sidebar + content)
         main_layout = QVBoxLayout()
-        main_layout.setSpacing(0)  # Loại bỏ khoảng cách thừa
+        main_layout.setSpacing(0)  
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         main_layout.addWidget(header)
@@ -121,7 +121,6 @@ class MainWindow(QMainWindow):
         restricted_pages = {
             "Members Management": ["ADMIN"],
             "Fines Management": ["ADMIN", "LIBRARIAN"],
-            # "Books Management": ["ADMIN", "LIBRARIAN"]   # nếu muốn hạn chế cả việc xem
         }
 
         if page_name in restricted_pages:
@@ -159,7 +158,7 @@ class MainWindow(QMainWindow):
             self.btn_delete_book.setVisible(show_buttons)
             #print(f"Buttons visible: {show_buttons}")  # debug
     def refresh_dashboard(self):
-        QMessageBox.information(self, "Dashboard", "Dashboard đã tự động làm mới!")
+        #QMessageBox.information(self, "Dashboard", "Dashboard refreshed!")
 
     def create_dashboard_page(self):
         widget = QWidget()
