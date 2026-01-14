@@ -220,34 +220,33 @@ class RegisterWindow(QWidget):
 
         # Validation cơ bản
         if not all([full_name, email, username, password]):
-            QMessageBox.warning(self, "Lỗi", "Vui lòng điền đầy đủ các trường bắt buộc!")
+            QMessageBox.warning(self, "Error", "Please insert all field!")
             return
 
         if password != confirm:
-            QMessageBox.warning(self, "Lỗi", "Mật khẩu xác nhận không khớp!")
+            QMessageBox.warning(self, "Error", "Password do not match!")
             return
 
         if len(password) < 8:
-            QMessageBox.warning(self, "Lỗi", "Mật khẩu phải ít nhất 8 ký tự!")
+            QMessageBox.warning(self, "Error", "Password must have at least 8 digits") 
             return
 
-        # Chuẩn bị data gửi đi register
+        # Send data to database
         data = {
             'username': username,
             'password': password,
             'full_name': full_name,
             'email': email,
             'phone': phone if phone else None,
-            # có thể thêm gender, dob nếu bạn sửa bảng Users
         }
 
         success, message = AuthService.register_user(data)
 
         if success:
-            QMessageBox.information(self, "Thành công", message)
-            self.back_to_login()  # quay về login
+            QMessageBox.information(self, "Registration Successful", message)
+            self.back_to_login()  # redirect to login 
         else:
-            QMessageBox.warning(self, "Đăng ký thất bại", message)
+            QMessageBox.warning(self, "Registration Failed", message)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
