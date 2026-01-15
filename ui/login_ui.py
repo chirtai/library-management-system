@@ -6,6 +6,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from logic.auth_service import AuthService
+from ui.register_ui import RegisterWindow
+from ui.main_ui import MainWindow
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -27,7 +29,7 @@ class LoginWindow(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # "Login "Title
+        # "Sign in" Title
         title = QLabel("Sign in")
         main_layout.addWidget(title)
         title.setObjectName("loginTitle")
@@ -81,7 +83,6 @@ class LoginWindow(QWidget):
         success, user_info, message = AuthService.login(username, password)
         if success:
             # Insert user infos
-            from main_ui import MainWindow
             self.main_window = MainWindow()
             self.main_window.current_user = {
                 "user_id": user_info['user_id'],
@@ -102,8 +103,6 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, "Sign in failed", message)
 
     def check_create_account(self):
-        # Open Register Window
-        from ui.register_ui import RegisterWindow
         self.register_window = RegisterWindow()
         self.register_window.show()
         self.close()
