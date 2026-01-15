@@ -111,17 +111,16 @@ class MainWindow(QMainWindow):
 
     def on_sidebar_clicked(self, item):
         if self.current_user is None:
-            QMessageBox.warning(self, "Lỗi", "Phiên đăng nhập không hợp lệ")
+            QMessageBox.warning(self, "Error", "User not found")
             return
 
         row = self.sidebar.row(item)
         page_name = item.text().strip()
 
-        # Các trang chỉ ADMIN/LIBRARIAN được xem hoặc thao tác
+        # Page that ADMIN / LiBRARIAN can see
         restricted_pages = {
             "Members Management": ["ADMIN"],
             "Fines Management": ["ADMIN", "LIBRARIAN"],
-            # "Books Management": ["ADMIN", "LIBRARIAN"]   # nếu muốn hạn chế cả việc xem
         }
 
         if page_name in restricted_pages:
@@ -136,12 +135,11 @@ class MainWindow(QMainWindow):
                 self.stacked_widget.setCurrentIndex(0)
                 return
 
-        # Nếu hợp lệ → chuyển trang
         self.stacked_widget.setCurrentIndex(row)
 
         # Refresh when click the tab in sidebar
         if row < len(self.sidebar):
-            self.refresh_dashboard()
+            self.refresh_content()
 
     def update_ui_by_role(self):
         if self.current_user is None:
@@ -158,9 +156,25 @@ class MainWindow(QMainWindow):
             self.btn_edit_book.setVisible(show_buttons)
             self.btn_delete_book.setVisible(show_buttons)
             #print(f"Buttons visible: {show_buttons}")  # debug
-    def refresh_dashboard(self):
-        QMessageBox.information(self, "Dashboard", "Dashboard đã tự động làm mới!")
 
+#------------ REFRESH PAGE ---------------
+    def refresh_dashboard(self):
+        pass
+
+    def refresh_books(self):
+        pass
+
+    def refresh_borrow(self):
+        pass
+
+    def refresh_members(self):
+        self.load_pending_members()
+        self.load_approved_members()
+
+    def refresh_fines(self):
+        pass
+
+    # ------------ DASHBOARD INTERFACE -------------
     def create_dashboard_page(self):
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -276,6 +290,7 @@ class MainWindow(QMainWindow):
 
         return card
 
+# ------------ BOOK MANAGEMENT INTERFACE ----------------
     def create_books_page(self):
         widget = QWidget()
         layout = QVBoxLayout()
@@ -326,6 +341,7 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         return widget
 
+# ------------ BORROWING INTERFACE -----------------
     def create_borrow_page(self):
         widget = QWidget()
         layout = QVBoxLayout()
@@ -359,6 +375,7 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         return widget
 
+# ------------ MEMBER MANAGEMENT INTERFACE ----------------
     def create_members_page(self):
         widget = QWidget()
         main_layout = QVBoxLayout(widget)
@@ -383,9 +400,9 @@ class MainWindow(QMainWindow):
         approved_layout.addLayout(search_layout)
 
         # Table thành viên đã duyệt
-        self.approved_table = QTableWidget(0, 6)
+        self.approved_table = QTableWidget(0, 7)
         self.approved_table.setHorizontalHeaderLabels([
-            "ID", "Full Name", "Email", "Phone Number", "Register date", "Status"
+            "ID", "Full Name", "Email", "Phone Number", "Register Date", "Role", "Status"
         ])
         self.approved_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.approved_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
@@ -434,7 +451,7 @@ class MainWindow(QMainWindow):
 
         return widget
 
-
+# -------------- FINES INTERFACE ----------------
     def create_fines_page(self):
         widget = QWidget()
         layout = QVBoxLayout()
@@ -447,6 +464,7 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         return widget
 
+# -------------- SIGN OUT ------------------
     def closeEvent(self, event):
         try:
             plt.close('all')
@@ -470,29 +488,33 @@ class MainWindow(QMainWindow):
         else:
             event.ignore()
 
+# ------------ LOAD DATABASE -------------
     def load_pending_members(self):
         results = Member.get_pending_members()
 
         self.pending_table.setRowCount(len(results))
         for row, record in enumerate(results):
+            user_id = None
             try:
                 user_id = record[0] if len(record) > 0 else None
                 full_name = record[1] if len(record) > 1 else ""
                 email = record[2] if len(record) > 2 else ""
                 phone = record[3] if len(record) > 3 else ""
                 reg_date = record[4] if len(record) > 4 else ""
-                reason = ""  # Vì đã bỏ cột reason
+                reason = record[5 ] if len(record) > 5 else ""
 
                 self.pending_table.setItem(row, 0, QTableWidgetItem(str(user_id)))
                 self.pending_table.setItem(row, 1, QTableWidgetItem(full_name or ""))
                 self.pending_table.setItem(row, 2, QTableWidgetItem(email or ""))
                 self.pending_table.setItem(row, 3, QTableWidgetItem(phone or ""))
                 self.pending_table.setItem(row, 4, QTableWidgetItem(reg_date or ""))
-                self.pending_table.setItem(row, 5, QTableWidgetItem(reason))
+                self.pending_table.setItem(row, 5, QTableWidgetItem(reason) or "")
             except Exception as e:
                 print(f"Error filling pending row {row}: {str(e)}")
                 print("Record data:", record)
 
+            if user_id is None:
+                continue
             # Action buttons
             action_widget = QWidget()
             hbox = QHBoxLayout(action_widget)
@@ -527,50 +549,59 @@ class MainWindow(QMainWindow):
                 email = record[2] if len(record) > 2 else ""
                 phone = record[3] if len(record) > 3 else ""
                 reg_date = record[4] if len(record) > 4 else ""
-                status = record[5] if len(record) > 5 else ""
+                role = record[5] if len(record) > 5 else ""
+                status = record[6] if len(record) > 6 else ""
 
                 self.approved_table.setItem(row, 0, QTableWidgetItem(str(user_id or "")))
                 self.approved_table.setItem(row, 1, QTableWidgetItem(str(full_name or "")))
                 self.approved_table.setItem(row, 2, QTableWidgetItem(str(email or "")))
                 self.approved_table.setItem(row, 3, QTableWidgetItem(str(phone or "")))
                 self.approved_table.setItem(row, 4, QTableWidgetItem(str(reg_date or "")))
-                self.approved_table.setItem(row, 5, QTableWidgetItem(str(status or "")))
+                self.approved_table.setItem(row, 5, QTableWidgetItem(str(role or "")))
+                self.approved_table.setItem(row, 6, QTableWidgetItem(str(status or "")))
             except Exception as e:
                 print(f"Error filling row {row}: {str(e)}")
                 print("Record data:", record)
 
     def approve_pending(self, user_id):
         if Member.approve_member(user_id):
-            QMessageBox.information(self, "Thành công", f"Đã duyệt thành viên ID {user_id}")
+            QMessageBox.information(self, "Success", f"Approved member with ID {user_id}")
             self.load_pending_members()
             self.load_approved_members()
         else:
-            QMessageBox.critical(self, "Lỗi", "Không thể duyệt thành viên")
+            QMessageBox.critical(self, "Error", "Can not approve this user")
 
     def reject_pending(self, user_id):
-        reason, ok = QInputDialog.getText(
-            self,
-            "Từ chối thành viên",
-            "Lý do từ chối (có thể bỏ trống):",
-            QLineEdit.Normal
-        )
+        try:
+            if user_id is None:
+                raise ValueError("User ID is None")
 
-        if ok:
-            if Member.reject_member(user_id, reason):
-                QMessageBox.information(self, "Thành công", f"Đã từ chối thành viên ID {user_id}")
-                self.load_pending_members()
-            else:
-                QMessageBox.critical(self, "Lỗi", "Không thể từ chối thành viên")
+            reason, ok = QInputDialog.getText(
+                self,
+                "Reject this pending member?",
+                "Reason for rejection:"
+            )
+
+            if ok:
+                if Member.reject_member(user_id, reason):
+                    QMessageBox.information(self, "Success", f"Rejected member with ID {user_id}")
+                    self.load_pending_members()
+                else:
+                    QMessageBox.critical(self, "Error", "Can not reject this user")
+        except Exception as e:
+            print(f"[ERROR in reject_pending]: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Error", f"Reject failed: {str(e)}")
 
     def approve_all_pending(self):
         reply = QMessageBox.question(
-            self, "Xác nhận",
-            "Bạn có chắc muốn DUYỆT TẤT CẢ thành viên đang chờ duyệt?",
+            self, "Confirm",
+            "Are you sure you want to approve all pending members?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            # Lấy tất cả user_id từ pending table
             user_ids = []
             for row in range(self.pending_table.rowCount()):
                 item = self.pending_table.item(row, 0)
@@ -579,22 +610,21 @@ class MainWindow(QMainWindow):
 
             if user_ids:
                 count = Member.approve_multiple_members(user_ids)
-                QMessageBox.information(self, "Hoàn tất", f"Đã duyệt thành công {count} thành viên")
+                QMessageBox.information(self, "Done!", f"Approved {count} member{'s' if count > 1 else ''}")
                 self.load_pending_members()
                 self.load_approved_members()
 
     def reject_all_pending(self):
         reason, ok = QInputDialog.getText(
             self,
-            "Từ chối tất cả",
-            "Lý do từ chối tất cả (có thể bỏ trống):",
-            QLineEdit.Normal
+            "Reject all pending members?",
+            "Reason for rejection:"
         )
 
         if ok:
             reply = QMessageBox.question(
-                self, "Xác nhận",
-                "Bạn có chắc muốn TỪ CHỐI TẤT CẢ thành viên đang chờ duyệt?",
+                self, "Confirm",
+                "Are you sure you want to reject all pending members?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
 
@@ -607,7 +637,7 @@ class MainWindow(QMainWindow):
 
                 if user_ids:
                     count = Member.reject_multiple_members(user_ids, reason)
-                    QMessageBox.information(self, "Hoàn tất", f"Đã từ chối thành công {count} thành viên")
+                    QMessageBox.information(self, "Done", f"Rejected {count} member{'s' if count > 1 else ''}")
                     self.load_pending_members()
 
 if __name__ == "__main__":

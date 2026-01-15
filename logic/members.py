@@ -9,7 +9,8 @@ class Member:
             full_name, 
             email, 
             phone, 
-            CONVERT(varchar, created_at, 23) AS reg_date
+            CONVERT(varchar, created_at, 23) AS reg_date,
+            ISNULL(reject_reason, '') AS reject_reason
         FROM Users 
         WHERE status = 'PENDING'
         ORDER BY created_at DESC
@@ -26,6 +27,7 @@ class Member:
             email, 
             phone, 
             CONVERT(varchar, created_at, 23) AS reg_date,
+            role,
             status
         FROM Users 
         WHERE status = 'ACTIVE'
@@ -42,16 +44,14 @@ class Member:
     def reject_member(user_id: int, reason: str = "") -> bool:
         query = """
         UPDATE Users 
-        SET status = 'REJECTED', 
+        SET status = 'INACTIVE', 
             reject_reason = ?
         WHERE user_id = ?
         """
         return db.execute_query(query, (reason, user_id), commit=True)
 
-    # Sửa lại: dùng Member thay vì MemberService
     @staticmethod
     def approve_multiple_members(user_ids: list[int]) -> int:
-        """Trả về số lượng thành công"""
         success_count = 0
         for uid in user_ids:
             if Member.approve_member(uid):

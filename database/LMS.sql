@@ -25,7 +25,8 @@ CREATE TABLE Users (
         CHECK (role IN ('ADMIN', 'LIBRARIAN', 'MEMBER')),
     status VARCHAR(20) DEFAULT 'PENDING' 
         CHECK (status IN ('PENDING', 'ACTIVE', 'INACTIVE', 'BLOCKED')),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    reject_reason VARCHAR(500) NULL;
 );
 
 CREATE TABLE Books (
@@ -103,4 +104,10 @@ WHERE status = 'PENDING';
 
 UPDATE Users
 SET status = 'ACTIVE'
-WHERE user_id = 1;
+SET role = 'ADMIN'
+WHERE user_id = 5;
+
+SELECT TOP 1 * FROM Users WHERE username = 'chitai';
+
+DELETE FROM Users WHERE username = 'admin';
+
