@@ -1,0 +1,4 @@
+PyQt6==6.6.1
+bcrypt==4.1.2
+pyodbc==5.1.0
+matplotlib==3.8.2

@@ -128,8 +128,8 @@ class MainWindow(QMainWindow):
             if self.current_user.get("role") not in allowed_roles:
                 QMessageBox.warning(
                     self,
-                    "Truy cập bị từ chối",
-                    f"Chỉ {', '.join(allowed_roles)} mới được truy cập chức năng này."
+                    "Access Denied",
+                    f"Only {', '.join(allowed_roles)} can access {page_name}."
                 )
                 self.sidebar.setCurrentRow(0)
                 self.stacked_widget.setCurrentIndex(0)
