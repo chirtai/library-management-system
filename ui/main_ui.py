@@ -89,6 +89,13 @@ class MainWindow(QMainWindow):
         # Build sidebar based on role
         self.setup_sidebar_by_role()
 
+        self.refresh_functions = {
+            0: self.refresh_dashboard,  # Dashboard
+            1: self.refresh_books,  # Books Management
+            2: self.refresh_borrow,  # Borrowing
+            3: self.refresh_members,  # Members Management
+            4: self.refresh_fines,  # Fines Management
+        }
     def setup_sidebar_by_role(self):
         if not self.current_user or "role" not in self.current_user:
             return
@@ -138,8 +145,8 @@ class MainWindow(QMainWindow):
         self.stacked_widget.setCurrentIndex(row)
 
         # Refresh when click the tab in sidebar
-        if row < len(self.sidebar):
-            self.refresh_content()
+        if row in self.refresh_functions:
+            self.refresh_functions[row]()
 
     def update_ui_by_role(self):
         if self.current_user is None:

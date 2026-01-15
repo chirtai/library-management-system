@@ -231,9 +231,8 @@ QLabel#chartTitle {
 }
 
 QMessageBox {
-    background-color: #ffffff;          /* nền trắng cho light mode */
-    color: #333333;                     /* chữ tối */
-    font-family: "Segoe UI", Arial;
+    background-color: #ffffff;
+    color: #333333;
     font-size: 13px;
 }
 
