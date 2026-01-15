@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
 
         # Main layout: header + splitter (sidebar + content)
         main_layout = QVBoxLayout()
-        main_layout.setSpacing(0)  # Loại bỏ khoảng cách thừa
+        main_layout.setSpacing(0)  
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         main_layout.addWidget(header)
