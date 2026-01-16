@@ -26,7 +26,7 @@ CREATE TABLE Users (
     status VARCHAR(20) DEFAULT 'PENDING' 
         CHECK (status IN ('PENDING', 'ACTIVE', 'INACTIVE', 'BLOCKED')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    reject_reason VARCHAR(500) NULL;
+    reject_reason VARCHAR(500) NULL,
 );
 
 CREATE TABLE Books (
@@ -107,7 +107,4 @@ SET status = 'ACTIVE'
 SET role = 'ADMIN'
 WHERE user_id = 5;
 
-SELECT TOP 1 * FROM Users WHERE username = 'chitai';
-
-DELETE FROM Users WHERE username = 'admin';
-
+Drop table Users

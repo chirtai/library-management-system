@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import keyring
 # Import PyQT6
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -195,25 +196,38 @@ class MainWindow(QMainWindow):
 
 # -------------- SIGN OUT ------------------
     def closeEvent(self, event):
-        try:
-            plt.close('all')
-            for child in self.findChildren(FigureCanvas):
-                child.figure.clear()
-                child.deleteLater()
-        except Exception as e:
-            print("Matplotlib cleanup error:", e)
-
         msg = QMessageBox(self)
-        msg.setWindowTitle("Exit")
-        msg.setText("Sign out and exit?")
+        msg.setWindowTitle("Confirm Action")
+        msg.setText("What would you like to do?")
         msg.setIcon(QMessageBox.Icon.Question)
-        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msg.setDefaultButton(QMessageBox.StandardButton.No)
 
-        reply = msg.exec()
+        logout_btn = msg.addButton("Log out", QMessageBox.ButtonRole.YesRole)
+        exit_btn = msg.addButton("Exit", QMessageBox.ButtonRole.NoRole)
+        cancel_btn = msg.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+        cancel_btn.setVisible(False)
 
-        if reply == QMessageBox.StandardButton.Yes:
+        msg.exec()
+
+        clicked = msg.clickedButton()
+
+        if clicked == logout_btn:
+            # Log out
+            import keyring
+            try:
+                keyring.delete_password("LibraryManagementSystem", "remember_username")
+                keyring.delete_password("LibraryManagementSystem", "remember_password")
+            except:
+                pass
+
             event.accept()
+
+            from ui.login_ui import LoginWindow
+            self.login_window = LoginWindow()
+            self.login_window.show()
+
+        elif clicked == exit_btn:
+            event.accept()
+
         else:
             event.ignore()
 
