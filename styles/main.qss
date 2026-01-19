@@ -1,9 +1,9 @@
-/* Background */
+/* ------ GLOBAL ------- */
 QMainWindow {
     background-color: #f5f7fa;
 }
 
-/* Sidebar */
+/* -------- SIDEBAR --------- */
 QListWidget {
     background-color: #2c3e50;
     color: white;
@@ -22,48 +22,7 @@ QListWidget::item:selected {
     font-weight: bold;
 }
 
-QListWidget::item:hover:!selected {
-    background-color: #34495e;
-}
-
-/* Table Headers */
-QHeaderView::section {
-    background-color: #3498db;
-    color: white;
-    padding: 12px;
-    font-weight: bold;
-    border: none;
-}
-
-/* Tables */
-QTableWidget {
-    background-color: white;
-    font-size: 14px;
-    gridline-color: #e0e0e0;
-    border: 1px solid #dcdcdc;
-    border-radius: 8px;
-}
-
-QTableWidget::item {
-    color: black;
-    min-height: 50px;
-}
-
-QTableWidget::verticalHeader {
-    width: 50px;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-    text-align: center;
-}
-
-QHeaderView::section:vertical {
-    background-color: #3498db;
-    border: 0px solid #dcdcdc;
-    padding: 4px;
-    min-width: 50px;
-}
-/* Tab Widget */
+/* ---------- TAB WIDGET ---------- */
 QTabWidget::pane {
     background: white;
     border-radius: 8px;
@@ -85,18 +44,14 @@ QTabBar::tab:selected {
     font-weight: bold;
 }
 
-QTabBar::tab:hover:!selected {
-    background: #bdc3c7;
-}
-
-/* Inputs & Buttons */
+/* -------- BUTTON, INPUT FIELD, COMBO BOX --------- */
 QComboBox {
     padding: 10px 16px;
     font-size: 15px;
     border: 2px solid #dcdcdc;
     border-radius: 8px;
     background-color: white;
-    color: #2c3e50;                  /* Main selected text color */
+    color: #2c3e50;
     min-height: 25px;
     selection-background-color: #3498db;
     selection-color: white;
@@ -119,7 +74,7 @@ QComboBox::drop-down {
 
 QComboBox QAbstractItemView {
     background-color: white;
-    color: #2c3e50;                  /* Item text color */
+    color: #2c3e50;
     selection-background-color: #3498db;
     selection-color: white;
     border: 2px solid #3498db;
@@ -132,7 +87,7 @@ QComboBox QAbstractItemView {
 QComboBox QAbstractItemView::item {
     padding: 12px 20px;
     min-height: 30px;
-    color: #2c3e50;                  /* Ensure item text is dark */
+    color: #2c3e50;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -162,7 +117,7 @@ QLineEdit:focus {
 }
 
 QLineEdit::placeholder {
-    color: #95a5a6;         /* Gray placeholder text */
+    color: #95a5a6;
     font-style: italic;
 }
 
@@ -179,6 +134,51 @@ QPushButton:hover {
     background: #2980b9;
 }
 
+/* --------- TABLE HEADER ---------- */
+QHeaderView::section {
+    background-color: #3498db;
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    border: none;
+}
+
+/* --------- TABLES --------- */
+QTableWidget {
+    background-color: white;
+    font-size: 14px;
+    selection-background-color: #3498db;
+    selection-color: white;
+    gridline-color: #e0e0e0;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+}
+
+QTableWidget::item {
+    color: black;
+    min-height: 50px;
+}
+QTableWidget::item:selected {
+        background-color: #bae7ff;
+        color: black;
+    }
+
+QTableWidget::verticalHeader {
+    width: 50px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+}
+
+QHeaderView::section:vertical {
+    background-color: #3498db;
+    border: 0px solid #dcdcdc;
+    padding: 4px;
+    min-width: 50px;
+}
+
+/* --------- SEARCH BUTTON ---------- */
 QPushButton#searchButton {
     font-size: 14px;
     background: #3498db;
@@ -196,12 +196,12 @@ QLabel {
     font-size: 15px
 }
 
-/* Summary Cards Container */
+/* ---------- CARD CONTAINERS ----------- */
 QWidget#summaryCard {
     background-color: transparent;
 }
 
-/* Big number (first QLabel inside card) */
+/* --------- NUMBERS FOR CARDS ---------- */
 QWidget#cardLabel {
     font-size: 44px;
     font-weight: 800;
@@ -210,7 +210,7 @@ QWidget#cardLabel {
     margin: 0 0 8px 0;
 }
 
-/* Card Title (second/last QLabel inside card) - This is what you wanted */
+/* --------- CARD TITLE ---------- */
 QLabel#cardTitle {
     font-size: 17px;
     font-weight: 600;
@@ -221,7 +221,7 @@ QLabel#cardTitle {
     text-transform: uppercase;
 }
 
-/* Chart Titles */
+/* ---------- CHART TITLE ---------- */
 QLabel#chartTitle {
     font-size: 24px;
     font-weight: 700;
@@ -230,12 +230,14 @@ QLabel#chartTitle {
     text-align: center;
 }
 
+/* ---------- MESSAGE BOXES ---------- */
 QMessageBox {
     background-color: #ffffff;
     color: #333333;
     font-size: 13px;
 }
 
+/* --------- INPUT DIALOG ---------- */
 QInputDialog {
     background-color: #ffffff;
     color: #333333;
@@ -243,4 +245,31 @@ QInputDialog {
 QInputDialog QLabel {
 font-size: 14px;
 color: black;
+}
+
+/* EDIT DIAGLOG */
+QDialog {
+    background-color: white;
+    border: 1px solid #dcdcdc;
+}
+
+QDialog QLineEdit {
+    background-color: #f9fbfc;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+}
+
+QDialog QLineEdit:focus {
+    border: 2px solid #3498db;
+    background-color: #ffffff;
+}
+
+QDialog QFormLayout::label {
+    color: #34495e;
+    font-weight: 500;
+    text-align: right;
+    padding-right: 16px;
 }

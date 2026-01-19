@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QStackedWidget, QListWidget,
     QTableWidget, QSplitter, QListWidgetItem, QInputDialog, QTableWidgetItem,
-    QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout)
+    QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout, QDialog)
 from PyQt6.QtCore import Qt
 # Import UI
 from ui.fines_ui import FinesInterface

@@ -1,7 +1,7 @@
 from database.db_connection import db
 import bcrypt
 
-class AuthService:
+class Login:
     @staticmethod
     def register_user(data: dict) -> tuple[bool, str]:
         try:
@@ -61,3 +61,38 @@ class AuthService:
             'role': role
         }
         return True, user_info, "Sign In Successfully"
+
+    @staticmethod
+    def reset_password(username: str, new_password: str) -> tuple[bool, str]:
+        try:
+            if len(new_password) < 8:
+                return False, f"New password must be at least 8 characters!"
+            # 1. Check valid username
+            user = db.execute_query(
+                "SELECT user_id FROM Users WHERE username = ?",
+                (username,),
+                fetch="one"
+            )
+
+            if not user:
+                return False, "Username not found"
+
+            # 2. Hash New Password
+            hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+            hashed_str = hashed.decode('utf-8')
+
+            # 3. Update New Password
+            success = db.execute_query(
+                "UPDATE Users SET password = ? WHERE username = ?",
+                (hashed_str, username),
+                commit=True
+            )
+
+            if success:
+                return True, "Change Password Successfully"
+            else:
+                return False, "Can't change password"
+
+        except Exception as e:
+            print("Reset password error:", e)
+            return False, f"System Error: {str(e)}"

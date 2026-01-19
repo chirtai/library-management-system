@@ -104,3 +104,43 @@ QPushButton#passwordResetButton:hover {
     color: #005fa3;
     text-decoration: underline;
 }
+
+/* -------- Forgot Password Dialog --------- */
+QDialog {
+    background-color: white;
+    border: 1px solid #dcdcdc;
+}
+
+QDialog QLineEdit {
+    background-color: #f9fbfc;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+}
+
+QDialog QLineEdit:focus {
+    border: 2px solid #3498db;
+    background-color: #ffffff;
+}
+
+QDialog QFormLayout::label {
+    color: #34495e;
+    font-weight: 500;
+    text-align: right;
+    padding-right: 16px;
+    font-size: 14px;
+}
+QDialog QPushButton {
+    background: #3498db;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+QDialog QPushButton:hover {
+    background: #2980b9;
+}

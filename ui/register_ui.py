@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QGridLayout, QCalendarWidget
 )
 from PyQt6.QtCore import Qt, QDate
-from logic.auth_service import AuthService
+from logic.login import Login
 
 class RegisterWindow(QWidget):
     def __init__(self):
@@ -228,7 +228,7 @@ class RegisterWindow(QWidget):
             return
 
         if len(password) < 8:
-            QMessageBox.warning(self, "Error", "Password must have at least 8 digits") 
+            QMessageBox.warning(self, "Error", "Password must have at least 8 characters")
             return
 
         # Send data to database
@@ -240,7 +240,7 @@ class RegisterWindow(QWidget):
             'phone': phone if phone else None,
         }
 
-        success, message = AuthService.register_user(data)
+        success, message = Login.register_user(data)
 
         if success:
             QMessageBox.information(self, "Registration Successful", message)

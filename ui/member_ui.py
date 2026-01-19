@@ -1,7 +1,9 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
-    QHeaderView, QTabWidget, QPushButton, QLineEdit, QMessageBox, QInputDialog
+    QHeaderView, QTabWidget, QPushButton, QLineEdit, QMessageBox, QInputDialog,
+    QDialog, QFormLayout, QAbstractItemView
 )
+from PyQt6.QtCore import Qt
 
 from logic.members import Member
 
@@ -19,7 +21,7 @@ class MemberInterface(QWidget):
         tabs.setDocumentMode(True)
         tabs.setTabPosition(QTabWidget.TabPosition.North)
 
-        # Tab 1: Approved Members
+        # ---------- Tab 1: Approved Members -----------
         approved_tab = QWidget()
         approved_layout = QVBoxLayout(approved_tab)
 
@@ -32,33 +34,55 @@ class MemberInterface(QWidget):
         search_layout.addWidget(search_btn)
         approved_layout.addLayout(search_layout)
 
-        # Table thành viên đã duyệt
         self.approved_table = QTableWidget(0, 7)
         self.approved_table.setHorizontalHeaderLabels([
             "ID", "Full Name", "Email", "Phone Number", "Register Date", "Role", "Status"
         ])
         self.approved_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.approved_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.approved_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.approved_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.approved_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         approved_layout.addWidget(self.approved_table)
+
+        # Edit/Delete Buttons
+        action_layout_approved = QHBoxLayout()
+        action_layout_approved.addStretch()
+        self.edit_member_btn = QPushButton("Edit Member")
+        self.delete_member_btn = QPushButton("Delete Member")
+        self.edit_member_btn.setEnabled(False)
+        self.delete_member_btn.setEnabled(False)
+        action_layout_approved.addWidget(self.edit_member_btn)
+        action_layout_approved.addWidget(self.delete_member_btn)
+        approved_layout.addLayout(action_layout_approved)
+
+        # Active when there a line is selected in table
+        self.approved_table.itemSelectionChanged.connect(self.on_approved_selection_changed)
+
+        # Connect Signal
+        self.edit_member_btn.clicked.connect(self.edit_selected_member)
+        self.delete_member_btn.clicked.connect(self.delete_selected_member)
 
         tabs.addTab(approved_tab, "Approved Members")
 
-        # ── Tab 2: Pending Approvals ─────────────────────────────────────
+        # ------------ Tab 2: Pending Approvals ------------
         pending_tab = QWidget()
         pending_layout = QVBoxLayout(pending_tab)
 
-        # Table chờ duyệt
         self.pending_table = QTableWidget(0, 7)
         self.pending_table.setHorizontalHeaderLabels([
             "ID", "Full Name", "Email", "Phone Number", "Register date", "Reason", "Action"
         ])
         header = self.pending_table.horizontalHeader()
-        for col in range(6):  # 0 đến 5
+        for col in range(6):
             header.setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
-        self.pending_table.setColumnWidth(6, 200)
-        self.pending_table.verticalHeader().setDefaultSectionSize(60)
+        self.pending_table.setColumnWidth(6, 220)
+        self.pending_table.verticalHeader().setDefaultSectionSize(50)
         self.pending_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.pending_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.pending_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.pending_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         pending_layout.addWidget(self.pending_table)
 
         # Approve / Reject All Buttons
@@ -66,19 +90,17 @@ class MemberInterface(QWidget):
         action_layout.addStretch()
         self.approve_all_btn = QPushButton("Approve All")
         self.reject_all_btn = QPushButton("Reject All")
-        action_layout.addWidget(self.approve_all_btn)
-        action_layout.addWidget(self.reject_all_btn)
         pending_layout.addLayout(action_layout)
 
         tabs.addTab(pending_tab, "Pending Members")
 
         main_layout.addWidget(tabs)
 
-        # Kết nối nút Approve/Reject All (phiên bản đơn giản - approve/reject tất cả pending)
+        # Connect Buttons
         self.approve_all_btn.clicked.connect(self.approve_all_pending)
         self.reject_all_btn.clicked.connect(self.reject_all_pending)
 
-        # Load dữ liệu lần đầu
+        # Load Data
         self.load_pending_members()
         self.load_approved_members()
 
@@ -119,7 +141,7 @@ class MemberInterface(QWidget):
 
             btn_approve = QPushButton("Approve")
             btn_reject = QPushButton("Reject")
-            btn_approve.setFixedWidth(90)
+            btn_approve.setFixedWidth(100)
             btn_reject.setFixedWidth(90)
 
             btn_approve.clicked.connect(lambda checked, uid = user_id: self.approve_pending(uid))
@@ -157,6 +179,7 @@ class MemberInterface(QWidget):
                 print(f"Error filling row {row}: {str(e)}")
                 print("Record data:", record)
 
+# ------------ REJECT/APPROVE ------------
     def approve_pending(self, user_id):
         if Member.approve_member(user_id):
             QMessageBox.information(self, "Success", f"Approved member with ID {user_id}")
@@ -233,3 +256,162 @@ class MemberInterface(QWidget):
                     count = Member.reject_multiple_members(user_ids, reason)
                     QMessageBox.information(self, "Done", f"Rejected {count} member{'s' if count > 1 else ''}")
                     self.load_pending_members()
+
+# ------------ EDIT/DELETE ---------------
+    def get_selected_member_id(self):
+        selected_rows = self.approved_table.selectionModel().selectedRows()
+        row = selected_rows[0].row()
+        id_item = self.approved_table.item(row, 0)
+        if id_item and id_item.text().strip():
+            try:
+                return int(id_item.text())
+            except ValueError:
+                return None
+        return None
+
+    # ------------ SELECTION HANDLER ---------------
+    def on_approved_selection_changed(self):
+        has_selection = self.approved_table.selectionModel().hasSelection()
+        self.edit_member_btn.setEnabled(has_selection)
+        self.delete_member_btn.setEnabled(has_selection)
+
+    # ------------ DELETE MEMBER ---------------
+    def delete_selected_member(self):
+        user_id = self.get_selected_member_id()
+        if user_id is None:
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Xác nhận xóa",
+            f"Are you sure to delete this member ID {user_id}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            if Member.delete_member(user_id):
+                QMessageBox.information(self, "Success", f"Deleted member ID {user_id}")
+                self.load_approved_members()
+            else:
+                QMessageBox.critical(self, "Error", "Can't delete this member")
+
+    # ------------ EDIT MEMBER ---------------
+    def edit_selected_member(self):
+        user_id = self.get_selected_member_id()
+        if user_id is None:
+            return
+
+        member = Member.get_member_by_id(user_id)
+        if not member:
+            QMessageBox.critical(self, "Error", "Member ID not found.")
+            return
+
+        # Mở dialog chỉnh sửa
+        dialog = MemberEditDialog(member, parent=self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            updated_data = dialog.get_updated_data()
+
+            if updated_data:
+                success = Member.update_member(
+                    user_id=user_id,
+                    full_name=updated_data["full_name"],
+                    email=updated_data["email"],
+                    phone=updated_data["phone"],
+                    role=updated_data["role"]
+                )
+
+                if success:
+                    QMessageBox.information(
+                        self,
+                        "Success",
+                        f"Updated member ID {user_id}"
+                    )
+                    self.load_approved_members()
+                else:
+                    QMessageBox.critical(self, "Error", "Can't update this member")
+
+
+class MemberEditDialog(QDialog):
+    def __init__(self, member_data: dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Edit Member Information")
+        self.setMinimumWidth(450)
+
+        self.member_data = member_data
+        self.result = None
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+
+        # Form layout để đẹp và dễ đọc
+        form_layout = QFormLayout()
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft)
+        form_layout.setSpacing(12)
+
+        # Các trường nhập liệu
+        self.full_name_edit = QLineEdit(self.member_data.get("full_name", ""))
+        self.email_edit = QLineEdit(self.member_data.get("email", ""))
+        self.phone_edit = QLineEdit(self.member_data.get("phone", ""))
+        self.role_edit = QLineEdit(self.member_data.get("role", ""))
+
+        self.full_name_edit.setObjectName("editMember")
+        self.email_edit.setObjectName("editMember")
+        self.phone_edit.setObjectName("editMember")
+        self.role_edit.setObjectName("editMember")
+        # Thêm vào form
+        form_layout.addRow("Full Name:", self.full_name_edit)
+        form_layout.addRow("Email:", self.email_edit)
+        form_layout.addRow("Phone Number:", self.phone_edit)
+        form_layout.addRow("Role:", self.role_edit)
+
+        layout.addLayout(form_layout)
+
+        # OK / Cancel Buttons
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        self.btn_ok = QPushButton("Save changes")
+        self.btn_cancel = QPushButton("Cancel")
+
+        self.btn_ok.setDefault(True)
+        self.btn_ok.clicked.connect(self.validate_and_accept)
+        self.btn_cancel.clicked.connect(self.reject)
+
+        button_layout.addWidget(self.btn_ok)
+        button_layout.addWidget(self.btn_cancel)
+
+        layout.addLayout(button_layout)
+        layout.addStretch()
+
+    def validate_and_accept(self):
+        full_name = self.full_name_edit.text().strip()
+        email = self.email_edit.text().strip()
+        phone = self.phone_edit.text().strip()
+        role = self.role_edit.text().strip()
+
+        if not full_name:
+            QMessageBox.warning(self, "Error", "Full name can't be empty!")
+            self.full_name_edit.setFocus()
+            return
+
+        if not email:
+            QMessageBox.warning(self, "Error", "Email can't be empty!")
+            self.email_edit.setFocus()
+            return
+
+        # Save new data
+        self.result = {
+            "full_name": full_name,
+            "email": email,
+            "phone": phone if phone else None,
+            "role": role if role else None
+        }
+
+        self.accept()
+
+    # Return new data
+    def get_updated_data(self):
+        return self.result

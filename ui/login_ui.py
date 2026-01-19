@@ -4,9 +4,10 @@ import keyring
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit,
     QPushButton, QVBoxLayout, QMessageBox, QCheckBox, QHBoxLayout,
+    QDialog, QFormLayout
 )
 from PyQt6.QtCore import Qt
-from logic.auth_service import AuthService
+from logic.login import Login
 from ui.register_ui import RegisterWindow
 from ui.main_ui import MainWindow
 
@@ -60,10 +61,10 @@ class LoginWindow(QWidget):
         bottom_layout.addWidget(self.remember_checkbox)
 
         # Reset password
-        btn_pass_reset = QPushButton("Forgot Password?")
-        bottom_layout.addWidget(btn_pass_reset, alignment=Qt.AlignmentFlag.AlignRight)
-        btn_pass_reset.setObjectName("passwordResetButton")
-
+        pass_reset_btn = QPushButton("Forgot Password?")
+        pass_reset_btn.setObjectName("passwordResetButton")
+        pass_reset_btn.clicked.connect(self.show_forgot_password)
+        bottom_layout.addWidget(pass_reset_btn, alignment=Qt.AlignmentFlag.AlignRight)
         main_layout.addLayout(bottom_layout)
         # Login Button
         btn_login = QPushButton("Login")
@@ -79,6 +80,23 @@ class LoginWindow(QWidget):
 
         # Load Remember me
         self.load_remembered_credentials()
+
+    # Password Reset
+    def show_forgot_password(self):
+        dialog = ForgotPasswordDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            if dialog.result:
+                from logic.login import Login
+
+                success, message = Login.reset_password(
+                    dialog.result["username"],
+                    dialog.result["new_password"]
+                )
+
+                if success:
+                    QMessageBox.information(self, "Success", message)
+                else:
+                    QMessageBox.warning(self, "Failed", message)
 
     # Load username and password (if possible)
     def load_remembered_credentials(self):
@@ -111,7 +129,7 @@ class LoginWindow(QWidget):
         if not username or not password:
             QMessageBox.warning(self, "Error", "Please enter your username and password!")
             return
-        success, user_info, message = AuthService.login(username, password)
+        success, user_info, message = Login.login(username, password)
         if success:
             if success:
                 # Check if Remember me is checked
@@ -152,7 +170,7 @@ def try_auto_login():
     password = keyring.get_password("LibraryManagementSystem", "remember_password")
 
     if username and password:
-        success, user_info, message = AuthService.login(username, password)
+        success, user_info, message = Login.login(username, password)
 
         if success:
             main_window = MainWindow()
@@ -170,6 +188,78 @@ def try_auto_login():
             return True
     return False
 
+class ForgotPasswordDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Reset Password")
+        self.setMinimumWidth(450)
+        self.result = None
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+
+        form_layout = QFormLayout()
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft)
+        form_layout.setSpacing(12)
+
+        self.username_edit = QLineEdit()
+        self.new_password_edit = QLineEdit()
+        self.new_password_edit.setEchoMode(QLineEdit.EchoMode.Password)
+
+        self.confirm_password_edit = QLineEdit()
+        self.confirm_password_edit.setEchoMode(QLineEdit.EchoMode.Password)
+
+        form_layout.addRow("Username:", self.username_edit)
+        form_layout.addRow("New Password:", self.new_password_edit)
+        form_layout.addRow("Confirm New Password:", self.confirm_password_edit)
+
+        layout.addLayout(form_layout)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        self.btn_confirm = QPushButton("Reset Password")
+        self.btn_cancel = QPushButton("Cancel")
+
+        self.btn_confirm.setDefault(True)
+        self.btn_confirm.clicked.connect(self.validate_and_accept)
+        self.btn_cancel.clicked.connect(self.reject)
+
+        button_layout.addWidget(self.btn_confirm)
+        button_layout.addWidget(self.btn_cancel)
+
+        layout.addLayout(button_layout)
+        layout.addStretch()
+
+    def validate_and_accept(self):
+        username = self.username_edit.text().strip()
+        new_pass = self.new_password_edit.text()
+        confirm_pass = self.confirm_password_edit.text()
+
+        if not username:
+            QMessageBox.warning(self, "Error", "Please enter your username!")
+            return
+
+        if not new_pass:
+            QMessageBox.warning(self, "Error", "Please enter your new password!")
+            return
+
+        if len(new_pass) < 6:
+            QMessageBox.warning(self, "Error", "Password must be at least 8 characters!")
+            return
+
+        if new_pass != confirm_pass:
+            QMessageBox.warning(self, "Error", "Password don't match!")
+            return
+
+        self.result = {
+            "username": username,
+            "new_password": new_pass
+        }
+        self.accept()
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     if try_auto_login():
