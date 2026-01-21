@@ -136,3 +136,27 @@ class Member:
             keys = ["user_id", "full_name", "email", "phone", "role", "status", "reg_date"]
             return dict(zip(keys, result))
         return None
+
+# ---------- SEARCH MEMBER ----------
+    @staticmethod
+    def search_members(search_term: str = ""):
+        if not search_term.strip():
+            return Member.get_approved_members()
+
+        term = f"%{search_term.strip()}%"
+        query = """
+        SELECT 
+            user_id, full_name, email, phone,
+            CONVERT(varchar, created_at, 23) AS reg_date,
+            role, status
+        FROM Users 
+        WHERE status = 'ACTIVE'
+          AND (
+              full_name LIKE ?
+              OR email    LIKE ?
+              OR phone    LIKE ?
+          )
+        ORDER BY created_at DESC
+        """
+        results = db.execute_query(query, (term, term, term), fetch="all")
+        return results or []

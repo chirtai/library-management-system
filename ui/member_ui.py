@@ -27,11 +27,13 @@ class MemberInterface(QWidget):
 
         # Search + Filter bar
         search_layout = QHBoxLayout()
-        search_input = QLineEdit()
-        search_input.setPlaceholderText("Search by Name, Phone Number, ...")
-        search_btn = QPushButton("Search")
-        search_layout.addWidget(search_input, 1)
-        search_layout.addWidget(search_btn)
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search by Name, Phone Number, Email")
+        self.search_input.textChanged.connect(self.filter_table)
+        """search_btn = QPushButton("Search")
+        search_btn.setObjectName("searchButton")"""
+        search_layout.addWidget(self.search_input, 1)
+        #search_layout.addWidget(search_btn)
         approved_layout.addLayout(search_layout)
 
         self.approved_table = QTableWidget(0, 7)
@@ -69,15 +71,15 @@ class MemberInterface(QWidget):
         pending_tab = QWidget()
         pending_layout = QVBoxLayout(pending_tab)
 
-        self.pending_table = QTableWidget(0, 7)
+        self.pending_table = QTableWidget(0, 6)
         self.pending_table.setHorizontalHeaderLabels([
-            "ID", "Full Name", "Email", "Phone Number", "Register date", "Reason", "Action"
+            "ID", "Full Name", "Email", "Phone Number", "Register date", "Action"
         ])
         header = self.pending_table.horizontalHeader()
-        for col in range(6):
+        for col in range(5):
             header.setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
-        self.pending_table.setColumnWidth(6, 220)
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
+        self.pending_table.setColumnWidth(5, 220)
         self.pending_table.verticalHeader().setDefaultSectionSize(50)
         self.pending_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.pending_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -117,14 +119,12 @@ class MemberInterface(QWidget):
                 email = record[2] if len(record) > 2 else ""
                 phone = record[3] if len(record) > 3 else ""
                 reg_date = record[4] if len(record) > 4 else ""
-                reason = record[5 ] if len(record) > 5 else ""
 
                 self.pending_table.setItem(row, 0, QTableWidgetItem(str(user_id)))
                 self.pending_table.setItem(row, 1, QTableWidgetItem(full_name or ""))
                 self.pending_table.setItem(row, 2, QTableWidgetItem(email or ""))
                 self.pending_table.setItem(row, 3, QTableWidgetItem(phone or ""))
                 self.pending_table.setItem(row, 4, QTableWidgetItem(reg_date or ""))
-                self.pending_table.setItem(row, 5, QTableWidgetItem(reason) or "")
             except Exception as e:
                 print(f"Error filling pending row {row}: {str(e)}")
                 print("Record data:", record)
@@ -151,7 +151,7 @@ class MemberInterface(QWidget):
             hbox.addWidget(btn_reject)
             hbox.addStretch(1)
 
-            self.pending_table.setCellWidget(row, 6, action_widget)
+            self.pending_table.setCellWidget(row, 5, action_widget)
 
     def load_approved_members(self):
         results = Member.get_approved_members()
@@ -269,13 +269,11 @@ class MemberInterface(QWidget):
                 return None
         return None
 
-    # ------------ SELECTION HANDLER ---------------
     def on_approved_selection_changed(self):
         has_selection = self.approved_table.selectionModel().hasSelection()
         self.edit_member_btn.setEnabled(has_selection)
         self.delete_member_btn.setEnabled(has_selection)
 
-    # ------------ DELETE MEMBER ---------------
     def delete_selected_member(self):
         user_id = self.get_selected_member_id()
         if user_id is None:
@@ -295,7 +293,6 @@ class MemberInterface(QWidget):
             else:
                 QMessageBox.critical(self, "Error", "Can't delete this member")
 
-    # ------------ EDIT MEMBER ---------------
     def edit_selected_member(self):
         user_id = self.get_selected_member_id()
         if user_id is None:
@@ -330,6 +327,21 @@ class MemberInterface(QWidget):
                 else:
                     QMessageBox.critical(self, "Error", "Can't update this member")
 
+# ------------ SEARCH -------------
+    def filter_table(self):
+        text = self.search_input.text().strip().lower()
+        if not text:
+            for r in range(self.approved_table.rowCount()):
+                self.approved_table.setRowHidden(r, False)
+            return
+
+        for r in range(self.approved_table.rowCount()):
+            name  = (self.approved_table.item(r, 1) or "").text().lower()
+            email = (self.approved_table.item(r, 2) or "").text().lower()
+            phone = (self.approved_table.item(r, 3) or "").text().lower()
+
+            hide = not (text in name or text in phone or text in email)
+            self.approved_table.setRowHidden(r, hide)
 
 class MemberEditDialog(QDialog):
     def __init__(self, member_data: dict, parent=None):

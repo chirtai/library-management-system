@@ -20,7 +20,7 @@ class BookInterface(QWidget):
         search_btn = QPushButton("Search")
         search_btn.setObjectName("searchButton")
         sort_combo = QComboBox()
-        sort_combo.addItems(["Title A-Z", "Author", "Publish Year", "Available Copies"])
+        sort_combo.addItems(["Title A-Z", "Author", "Publish Year", "Category"])
 
         top_bar.addWidget(search_input, 1)
         top_bar.addWidget(search_btn)
