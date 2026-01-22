@@ -1,11 +1,16 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QHeaderView, QTabWidget, QPushButton, QLineEdit, QMessageBox, QInputDialog,
-    QDialog, QFormLayout, QAbstractItemView
+    QDialog, QFormLayout, QAbstractItemView, QStyledItemDelegate
 )
 from PyQt6.QtCore import Qt
 
 from logic.members import Member
+
+class CenterDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        option.displayAlignment = Qt.AlignmentFlag.AlignCenter
 
 class MemberInterface(QWidget):
     def __init__(self, parent=None):
@@ -30,10 +35,7 @@ class MemberInterface(QWidget):
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search by Name, Phone Number, Email")
         self.search_input.textChanged.connect(self.filter_table)
-        """search_btn = QPushButton("Search")
-        search_btn.setObjectName("searchButton")"""
         search_layout.addWidget(self.search_input, 1)
-        #search_layout.addWidget(search_btn)
         approved_layout.addLayout(search_layout)
 
         self.approved_table = QTableWidget(0, 7)
@@ -41,10 +43,14 @@ class MemberInterface(QWidget):
             "ID", "Full Name", "Email", "Phone Number", "Register Date", "Role", "Status"
         ])
         self.approved_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.approved_table.verticalHeader().setDefaultSectionSize(50)
+        self.approved_table.verticalHeader().setVisible(False)
+        self.approved_table.setShowGrid(False)
         self.approved_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.approved_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.approved_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.approved_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.approved_table.setItemDelegate(CenterDelegate(self.approved_table))
         approved_layout.addWidget(self.approved_table)
 
         # Edit/Delete Buttons
@@ -52,6 +58,8 @@ class MemberInterface(QWidget):
         action_layout_approved.addStretch()
         self.edit_member_btn = QPushButton("Edit Member")
         self.delete_member_btn = QPushButton("Delete Member")
+        self.edit_member_btn.setStyleSheet("background: #2e7dff; color: white; font-weight: bold;")
+        self.delete_member_btn.setStyleSheet("background: #ff5f56; color: white; font-weight: bold;")
         self.edit_member_btn.setEnabled(False)
         self.delete_member_btn.setEnabled(False)
         action_layout_approved.addWidget(self.edit_member_btn)
@@ -79,12 +87,17 @@ class MemberInterface(QWidget):
         for col in range(5):
             header.setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
+
         self.pending_table.setColumnWidth(5, 220)
         self.pending_table.verticalHeader().setDefaultSectionSize(50)
+        self.pending_table.verticalHeader().setVisible(False)
+        self.pending_table.setShowGrid(False)
+
         self.pending_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.pending_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.pending_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.pending_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.pending_table.setItemDelegate(CenterDelegate(self.pending_table))
         pending_layout.addWidget(self.pending_table)
 
         # Approve / Reject All Buttons
@@ -92,6 +105,10 @@ class MemberInterface(QWidget):
         action_layout.addStretch()
         self.approve_all_btn = QPushButton("Approve All")
         self.reject_all_btn = QPushButton("Reject All")
+        self.approve_all_btn.setStyleSheet("background: #2e7dff; color: white; font-weight: bold;")
+        self.reject_all_btn.setStyleSheet("background: #ff5f56; color: white; font-weight: bold;")
+        action_layout.addWidget(self.approve_all_btn)
+        action_layout.addWidget(self.reject_all_btn)
         pending_layout.addLayout(action_layout)
 
         tabs.addTab(pending_tab, "Pending Members")
@@ -141,6 +158,8 @@ class MemberInterface(QWidget):
 
             btn_approve = QPushButton("Approve")
             btn_reject = QPushButton("Reject")
+            btn_approve.setStyleSheet("background: #2e7dff; color: white; font-weight: bold;")
+            btn_reject.setStyleSheet("background: #ff5f56; color: white; font-weight: bold;")
             btn_approve.setFixedWidth(100)
             btn_reject.setFixedWidth(90)
 
@@ -281,7 +300,7 @@ class MemberInterface(QWidget):
 
         reply = QMessageBox.question(
             self,
-            "Xác nhận xóa",
+            "Confirm",
             f"Are you sure to delete this member ID {user_id}?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
@@ -357,7 +376,6 @@ class MemberEditDialog(QDialog):
     def setup_ui(self):
         layout = QVBoxLayout(self)
 
-        # Form layout để đẹp và dễ đọc
         form_layout = QFormLayout()
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft)

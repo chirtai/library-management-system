@@ -1,13 +1,13 @@
 /* Background */
 QWidget {
-    background-color: white;
-    color: black;
+    background-color: #ffffff;
+    color: #000000;
     font-family: "Comfortaa";
 }
 
 /* "Login" Title */
 QLabel#loginTitle {
-    font-family: "Comfortaa";
+    color: #3f3f3f;
     font-size: 30pt;
     font-weight: bold;
     qproperty-alignment: 'AlignCenter';
@@ -19,28 +19,33 @@ QLabel#loginTitle {
 QLineEdit#usernameInput {
     padding: 12px;
     font-size: 16px;
-    border: 1px solid #bdc3c7;
+    border: 1px solid #7d7d7d;
     border-radius: 20px;
     margin: 5px 50px;
-    background-color: #f8f9fa;
+    background-color: #f9f9f9;
 }
 
 /* Password Input */
 QLineEdit#passwordInput {
     padding: 12px;
     font-size: 16px;
-    border: 1px solid #bdc3c7;
+    border: 1px solid #7d7d7d;
     border-radius: 20px;
     margin: 5px 50px;
-    background-color: #f8f9fa;
+    background-color: #f9f9f9;
 }
 
+QLineEdit:focus {
+    border-color: #7d7d7d;
+    background-color: #ffffff;
+    outline: none;
+}
 /* Login Button */
 QPushButton#loginButton {
     padding: 12px;
     font-size: 16px;
     font-weight: bold;
-    background-color: #0078d7;
+    background-color: #72bd77;
     color: white;
     border: none;
     border-radius: 30px;
@@ -48,14 +53,14 @@ QPushButton#loginButton {
     min-height: 45px;
 }
 
-QPushButton:hover {
-    background-color: #005fa3;
+QPushButton#loginButton:hover {
+    background-color: #def1dd;
 }
 
 /* Checkbox */
 QCheckBox#rememberCheckbox {
     font-size: 14px;
-    color: #555;
+    color: #7d7d7d;
     spacing: 8px;
     margin: 5px 50px;
     padding: 5px 0;
@@ -64,20 +69,20 @@ QCheckBox#rememberCheckbox {
 QCheckBox#rememberCheckbox::indicator {
     width: 15px;
     height: 15px;
-    border: 2px solid #bdc3c7;
+    border: 1px solid #7d7d7d;
     border-radius: 4px;
     background-color: white;
 }
 
 QCheckBox#rememberCheckbox::indicator:checked {
-    background-color: #3498db;
-    border-color: #3498db;
+    background-color: #72bd77;
+    border: 1px solid #7d7d7d;
 }
 
 /* "Don't have an account" */
 QPushButton#createAccountButton {
     font-size: 14px;
-    color: #555;
+    color: #7d7d7d;
     background-color: transparent;
     border: none;
     margin-top: 15px;
@@ -85,14 +90,14 @@ QPushButton#createAccountButton {
 }
 
 QPushButton#createAccountButton:hover {
-    color: #005fa3;
+    color: #72bd77;
     text-decoration: underline;
 }
 
 /* Reset Password */
 QPushButton#passwordResetButton {
     font-size: 14px;
-    color: #555;
+    color: #7d7d7d;
     background-color: transparent;
     border: none;
     padding: 5px;
@@ -101,39 +106,36 @@ QPushButton#passwordResetButton {
 }
 
 QPushButton#passwordResetButton:hover {
-    color: #005fa3;
+    color: #72bd77;
     text-decoration: underline;
 }
 
 /* -------- Forgot Password Dialog --------- */
 QDialog {
-    background-color: white;
-    border: 1px solid #dcdcdc;
+    background-color: #ffffff;
+    border: 1px solid #7d7d7d;
 }
-
+QDialog QLabel {
+    color: #000000;
+    background-color: transparent;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 5px;
+}
 QDialog QLineEdit {
-    background-color: #f9fbfc;
-    color: #2c3e50;
-    border: 1px solid #bdc3c7;
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #7d7d7d;
     border-radius: 6px;
     padding: 10px 14px;
     font-size: 14px;
 }
-
 QDialog QLineEdit:focus {
-    border: 2px solid #3498db;
+    border: 1px solid #7d7d7d;
     background-color: #ffffff;
 }
-
-QDialog QFormLayout::label {
-    color: #34495e;
-    font-weight: 500;
-    text-align: right;
-    padding-right: 16px;
-    font-size: 14px;
-}
 QDialog QPushButton {
-    background: #3498db;
+    background: #72bd77;
     color: white;
     padding: 10px 20px;
     border: none;
@@ -142,5 +144,5 @@ QDialog QPushButton {
 }
 
 QDialog QPushButton:hover {
-    background: #2980b9;
+    background: #def1dd;
 }

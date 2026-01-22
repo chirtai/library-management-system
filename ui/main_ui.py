@@ -8,12 +8,17 @@ from PyQt6.QtWidgets import (
     QTableWidget, QSplitter, QListWidgetItem, QInputDialog, QTableWidgetItem,
     QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout, QDialog)
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 # Import UI
 from ui.fines_ui import FinesInterface
 from ui.member_ui import MemberInterface
 from ui.borrowing_ui import BorrowingInterface
 from ui.book_ui import BookInterface
 from ui.dashboard_ui import DashboardInterface
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+QSS_PATH = BASE_DIR / "styles" / "main.qss"
+ICONS_DIR = BASE_DIR / "icons"
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -23,9 +28,6 @@ class MainWindow(QMainWindow):
         self.current_user = None
 
         # ------ LOAD QSS -------
-        BASE_DIR = Path(__file__).resolve().parent.parent
-        QSS_PATH = BASE_DIR / "styles" / "main.qss"
-
         try:
             with open(QSS_PATH, "r", encoding="utf-8") as f:
                 self.setStyleSheet(f.read())
@@ -42,7 +44,7 @@ class MainWindow(QMainWindow):
         self.members_page = MemberInterface(self)
         self.fines_page = FinesInterface(self)
 
-        # Add pages to stacked widget (order matters for index)
+        # Add pages to stacked widget
         self.stacked_widget.addWidget(self.dashboard_page)  # index 0
         self.stacked_widget.addWidget(self.books_page)  # index 1
         self.stacked_widget.addWidget(self.borrow_page)  # index 2
@@ -51,7 +53,7 @@ class MainWindow(QMainWindow):
 
         # Sidebar navigation
         self.sidebar = QListWidget()
-        self.sidebar.setFixedWidth(230)
+        self.sidebar.setFixedWidth(250)
 
         # Connect sidebar selection to page change
         self.sidebar.currentRowChanged.connect(self.stacked_widget.setCurrentIndex)
@@ -73,9 +75,7 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.sidebar)
         splitter.addWidget(self.stacked_widget)
         splitter.setSizes([230, 1050])
-        splitter.setHandleWidth(1)
-        splitter.setStyleSheet("QSplitter::handle { background-color: #34495e; }")
-
+        splitter.setHandleWidth(0)
         main_layout.addWidget(splitter, 1)
 
         # Central widget
@@ -100,14 +100,27 @@ class MainWindow(QMainWindow):
         role = self.current_user["role"].upper()
         self.sidebar.clear()
 
+        menu_icons = {
+            "Dashboard": str(ICONS_DIR / "dashboard.png"),
+            "Books": str(ICONS_DIR / "book.png"),
+            "Borrowing": str(ICONS_DIR / "borrow.png"),
+            "Members": str(ICONS_DIR / "member.png"),
+            "Fines": str(ICONS_DIR / "fines.png"), }
+
         # Default Sidebar for every role
-        menu_items = ["Dashboard", "Books Management", "Borrowing"]
+        menu_items = ["Dashboard", "Books", "Borrowing"]
 
         if role in ["ADMIN", "LIBRARIAN"]:
-            menu_items.extend(["Members Management", "Fines Management"])
+            menu_items.extend(["Members", "Fines"])
 
-        for item in menu_items:
-            self.sidebar.addItem(item)
+        for item_text in menu_items:
+            icon_path = menu_icons.get(item_text, "")
+            list_item = QListWidgetItem(item_text)
+
+            if icon_path:
+                list_item.setIcon(QIcon(icon_path))
+
+            self.sidebar.addItem(list_item)
 
         # Set default page
         if menu_items:
@@ -123,7 +136,7 @@ class MainWindow(QMainWindow):
 
         # Page that ADMIN / LiBRARIAN can see
         restricted_pages = {
-            "Members Management": ["ADMIN"],
+            "Members Management": ["ADMIN", "LIBRARIAN"],
             "Fines Management": ["ADMIN", "LIBRARIAN"],
         }
 

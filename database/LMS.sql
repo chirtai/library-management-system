@@ -41,27 +41,14 @@ CREATE TABLE Books (
     FOREIGN KEY (author_id) REFERENCES Authors(author_id)
 );
 
-CREATE TABLE BookCopies (
-    copy_id INT PRIMARY KEY IDENTITY(1,1),
-    book_id INT,
-    barcode VARCHAR(50) UNIQUE, 
-     status VARCHAR(20) DEFAULT 'AVAILABLE' 
-        CHECK (status IN ('AVAILABLE', 'BORROWED', 'LOST', 'MAINTENANCE')),
-    location VARCHAR(50),
-    FOREIGN KEY (book_id) REFERENCES Books(book_id)
-);
-
-
 CREATE TABLE Borrowing (
     borrow_id INT PRIMARY KEY IDENTITY(1,1),
-    user_id INT, 
-    copy_id INT, 
+    user_id INT,  
     staff_id INT, 
     borrow_date DATE NOT NULL,
     due_date DATE NOT NULL, 
     return_date DATE, 
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
-    FOREIGN KEY (copy_id) REFERENCES BookCopies(copy_id),
     FOREIGN KEY (staff_id) REFERENCES Users(user_id)
 );
 
@@ -87,24 +74,3 @@ CREATE TABLE Payments (
     FOREIGN KEY (fine_id) REFERENCES Fines(fine_id),
     FOREIGN KEY (staff_id) REFERENCES Users(user_id)
 );
-
-SELECT * FROM Users
-
-SELECT 
-    user_id,
-    username,
-    full_name,
-    email,
-    phone,
-    role,
-    status,
-    created_at
-FROM Users
-WHERE status = 'PENDING';
-
-UPDATE Users
-SET status = 'ACTIVE'
-SET role = 'ADMIN'
-WHERE user_id = 5;
-
-Drop table Users

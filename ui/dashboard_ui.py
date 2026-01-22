@@ -5,10 +5,8 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QStackedWidget, QListWidget,
-    QTableWidget, QSplitter, QListWidgetItem, QInputDialog, QTableWidgetItem,
-    QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout)
+    QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QGridLayout)
 from PyQt6.QtCore import Qt
 
 class DashboardInterface(QWidget):
@@ -45,7 +43,7 @@ class DashboardInterface(QWidget):
 
         # Charts Section - Split Left & Right
         charts_container = QWidget()
-        charts_layout = QHBoxLayout(charts_container)  # Horizontal layout → side by side
+        charts_layout = QHBoxLayout(charts_container)
         charts_layout.setSpacing(40)
 
         # LEFT: Borrowing Trends - Line Chart
@@ -98,7 +96,7 @@ class DashboardInterface(QWidget):
 
         for bar in bars:
             yval = bar.get_height()
-            ax2.text(bar.get_x() + bar.get_width() / 2, yval + 5, int(yval), ha='center', va='bottom')
+            ax2.text(bar.get_x() + bar.get_width() / 2, yval + 5, str(int(yval)), ha='center', va='bottom')
 
         cat_canvas.setMinimumHeight(380)
         right_layout.addWidget(cat_canvas)

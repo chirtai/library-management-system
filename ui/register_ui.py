@@ -191,7 +191,7 @@ class RegisterWindow(QWidget):
         main_layout.addLayout(buttons_layout)
 
     def back_to_login(self):
-        from login_ui import LoginWindow
+        from ui.login_ui import LoginWindow
         self.login_window = LoginWindow()
         self.login_window.show()
         self.close()
@@ -207,7 +207,7 @@ class RegisterWindow(QWidget):
         password = self.input_password.text()
         confirm = self.input_confirm.text()
 
-        # Lấy giới tính
+        # Gender
         gender = None
         if self.radio_male.isChecked():
             gender = "Male"
@@ -218,7 +218,7 @@ class RegisterWindow(QWidget):
 
         dob = self.input_dob.date().toString("yyyy-MM-dd")
 
-        # Validation cơ bản
+        # Validation
         if not all([full_name, email, username, password]):
             QMessageBox.warning(self, "Error", "Please insert all field!")
             return
