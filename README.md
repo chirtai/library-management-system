@@ -38,6 +38,11 @@ cd library-management-system
 pip install -r requirements.txt
 ```
 ### 3. Database setup
+1. Install SQL Server Express
+2. Install SQL Server Management Studio (SSMS)
+3. Connect to Server name as: localhost\SQLEXPRESS
+4. Create Database and Tables 
+5. Restore Backup
 
 
 
