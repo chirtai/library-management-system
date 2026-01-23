@@ -130,6 +130,6 @@ QPushButton#backButton {
 }
 
 QPushButton#backButton:hover {
-    color: #005fa3;
+    color: #def1dd;
     text-decoration: underline;
 }
