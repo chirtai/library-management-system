@@ -56,7 +56,6 @@ class MainWindow(QMainWindow):
         self.sidebar.setFixedWidth(250)
 
         # Connect sidebar selection to page change
-        self.sidebar.currentRowChanged.connect(self.stacked_widget.setCurrentIndex)
         self.sidebar.itemClicked.connect(self.on_sidebar_clicked)
 
         # Header (top bar)
@@ -108,22 +107,28 @@ class MainWindow(QMainWindow):
             "Fines": str(ICONS_DIR / "fines.png"), }
 
         # Default Sidebar for every role
-        menu_items = ["Dashboard", "Books", "Borrowing"]
+        menu_items = [("Dashboard", 0),
+                      ("Books", 1),
+                      ("Borrowing", 2),
+                      ("Members", 3),
+                      ("Fines", 4)]
 
-        if role in ["ADMIN", "LIBRARIAN"]:
-            menu_items.extend(["Members", "Fines"])
+        for text, real_index in menu_items:
+            if text == "Members" and role != "ADMIN":
+                continue
+            if text == "Fines" and role not in ["ADMIN", "LIBRARIAN"]:
+                continue
 
-        for item_text in menu_items:
-            icon_path = menu_icons.get(item_text, "")
-            list_item = QListWidgetItem(item_text)
+            icon_path = menu_icons.get(text, "")
+            item = QListWidgetItem(text)
 
             if icon_path:
-                list_item.setIcon(QIcon(icon_path))
+                item.setIcon(QIcon(icon_path))
 
-            self.sidebar.addItem(list_item)
+            item.setData(Qt.ItemDataRole.UserRole, real_index)
+            self.sidebar.addItem(item)
 
-        # Set default page
-        if menu_items:
+        if self.sidebar.count() > 0:
             self.sidebar.setCurrentRow(0)
 
     def on_sidebar_clicked(self, item):
@@ -131,32 +136,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "User not found")
             return
 
-        row = self.sidebar.row(item)
-        page_name = item.text().strip()
+        target_index = item.data(Qt.ItemDataRole.UserRole)
+        if target_index is None:
+            target_index = 0
 
-        # Page that ADMIN / LiBRARIAN can see
-        restricted_pages = {
-            "Members Management": ["ADMIN", "LIBRARIAN"],
-            "Fines Management": ["ADMIN", "LIBRARIAN"],
-        }
-
-        if page_name in restricted_pages:
-            allowed_roles = restricted_pages[page_name]
-            if self.current_user.get("role") not in allowed_roles:
-                QMessageBox.warning(
-                    self,
-                    "Access Denied",
-                    f"Only {', '.join(allowed_roles)} can access {page_name}."
-                )
-                self.sidebar.setCurrentRow(0)
-                self.stacked_widget.setCurrentIndex(0)
-                return
-
-        self.stacked_widget.setCurrentIndex(row)
+        self.stacked_widget.setCurrentIndex(target_index)
 
         # Refresh when click the tab in sidebar
-        if row in self.refresh_functions:
-            self.refresh_functions[row]()
+        if target_index in self.refresh_functions:
+            self.refresh_functions[target_index]()
 
     def update_ui_by_role(self):
         if self.current_user is None:
@@ -164,7 +152,6 @@ class MainWindow(QMainWindow):
             return
 
         role = self.current_user.get("role", "").upper()
-        #print(f"DEBUG update_ui_by_role: role = {role}")  # debug
 
         show_buttons = role in ["ADMIN", "LIBRARIAN"]
 
@@ -190,7 +177,6 @@ class MainWindow(QMainWindow):
 
     def refresh_fines(self):
         pass
-
 # ------------ DASHBOARD INTERFACE -------------
     def create_dashboard_page(self):
         return DashboardInterface(self)
