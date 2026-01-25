@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 # Import UI
-from ui.fines_ui import FinesInterface
+from ui.fines_payments_ui import MainApp
 from ui.member_ui import MemberInterface
 from ui.borrowing_ui import BorrowingInterface
 from ui.book_ui import BookInterface
@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.books_page = BookInterface(self)
         self.borrow_page = BorrowingInterface(self)
         self.members_page = MemberInterface(self)
-        self.fines_page = FinesInterface(self)
+        self.fines_page = MainApp(self)
 
         # Add pages to stacked widget
         self.stacked_widget.addWidget(self.dashboard_page)  # index 0
@@ -205,7 +205,7 @@ class MainWindow(QMainWindow):
         return MemberInterface(self)
 # -------------- FINES INTERFACE ----------------
     def create_fines_page(self):
-        return FinesInterface(self)
+        return MainApp(self)
 
 # -------------- SIGN OUT ------------------
     def closeEvent(self, event):

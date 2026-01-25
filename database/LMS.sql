@@ -56,7 +56,7 @@ CREATE TABLE Fines (
     fine_id INT PRIMARY KEY IDENTITY(1,1),
     borrow_id INT,
     amount DECIMAL(10,2),
-    reason TEXT,
+    reason NVARCHAR(150),
     payment_status NVARCHAR(20) DEFAULT 'UNPAID' 
         CHECK (payment_status IN ('UNPAID', 'PAID')),
     FOREIGN KEY (borrow_id) REFERENCES Borrowing(borrow_id)
@@ -74,3 +74,5 @@ CREATE TABLE Payments (
     FOREIGN KEY (fine_id) REFERENCES Fines(fine_id),
     FOREIGN KEY (staff_id) REFERENCES Users(user_id)
 );
+
+

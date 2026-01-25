@@ -35,7 +35,7 @@ cd library-management-system
 ```
 ### 2. Install Python dependencies
 ```
-pip install -r requirements.txt
+pip install -r requirement.txt
 ```
 ### 3. Database setup
 1. Install SQL Server Express
