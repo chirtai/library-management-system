@@ -12,23 +12,24 @@ from logic.fine_payment import PaymentsController
 class MainApp(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Hệ Thống Quản Lý Thư Viện")
+        self.setWindowTitle("Library Management System")
         self.resize(1000, 700)
 
-        # Tạo widget trung tâm và QTabWidget
+        # Create central widget and QTabWidget
         self.central_widget = QTabWidget()
         self.setCentralWidget(self.central_widget)
 
-        # Thêm Tab "Quản lý Phiếu phạt" từ class của bạn
+        # Add "Fine Management" Tab
         self.fines_tab = FinesInterface()
-        self.central_widget.addTab(self.fines_tab, "Quản lý Phiếu phạt")
+        self.central_widget.addTab(self.fines_tab, "Fine Management")
 
+        # Add "Payment Management" Tab
         self.payments_tab = PaymentsInterface() 
-        self.central_widget.addTab(self.payments_tab, "Quản lý Thanh toán")
+        self.central_widget.addTab(self.payments_tab, "Payment Management")
 
-        # Bạn có thể thêm các Tab khác ở đây
-        # self.central_widget.addTab(QWidget(), "Quản lý Sách")
-        # self.central_widget.addTab(QWidget(), "Quản lý Thành viên")
+        # Other tabs can be added here
+        # self.central_widget.addTab(QWidget(), "Book Management")
+        # self.central_widget.addTab(QWidget(), "Member Management")
 
 class FinesInterface(QWidget):
     def __init__(self, parent=None):
@@ -37,22 +38,22 @@ class FinesInterface(QWidget):
 
         self.controller = FinesController(self)
         
-        # Kết nối sự kiện nút bấm với hàm trong file logic
+        # Connect button events to logic file functions
         self.btn_add.clicked.connect(self.controller.add_fine)
         self.btn_update.clicked.connect(self.controller.update_fine)
         self.btn_delete.clicked.connect(self.controller.delete_fine)
         self.btn_clear.clicked.connect(self.controller.clear_form)
         
-        # Tải dữ liệu khi mở ứng dụng
+        # Load data on startup
         self.controller.load_data()
         
-        # Sự kiện click vào bảng để đổ ngược dữ liệu lên form
+        # Table click event to populate form
         self.table.itemClicked.connect(self.display_selected_row)
 
     def display_selected_row(self, item):
         row = item.row()
         self.txt_borrow_id.setText(self.table.item(row, 2).text())
-        self.txt_borrow_id.setReadOnly(True) # Không cho sửa khóa ngoại khi đang cập nhật
+        self.txt_borrow_id.setReadOnly(True) # Prevent editing foreign key during update
         self.txt_amount.setText(self.table.item(row, 3).text())
         self.txt_reason.setText(self.table.item(row, 4).text())
         
@@ -64,14 +65,13 @@ class FinesInterface(QWidget):
         self.main_layout.setContentsMargins(20, 20, 20, 20)
         self.main_layout.setSpacing(15)
 
-        # --- 1. Tiêu đề ---
-        self.label_title = QLabel("QUẢN LÝ PHIẾU PHẠT")
+        # --- 1. Title ---
+        self.label_title = QLabel("FINE MANAGEMENT")
         self.label_title.setStyleSheet("font-size: 20px; font-weight: bold; color: #2E7D32;")
         self.main_layout.addWidget(self.label_title)
 
-        # --- 2. Khu vực Nhập liệu (Form) ---
+        # --- 2. Input Area (Form) ---
         input_frame = QFrame()
-        # Đổi màu nền frame và các ô nhập liệu để không bị trùng
         input_frame.setStyleSheet("""
             QFrame {
                 background-color: #ffffff; 
@@ -97,34 +97,34 @@ class FinesInterface(QWidget):
         """)
         
         input_layout = QGridLayout(input_frame)
-        input_layout.addWidget(QLabel("Mã mượn (Borrow ID):"), 0, 0)
+        input_layout.addWidget(QLabel("Borrow ID:"), 0, 0)
         self.txt_borrow_id = QLineEdit()
         input_layout.addWidget(self.txt_borrow_id, 0, 1)
 
-        input_layout.addWidget(QLabel("Số tiền (VND):"), 0, 2)
+        input_layout.addWidget(QLabel("Amount (VND):"), 0, 2)
         self.txt_amount = QLineEdit()
         input_layout.addWidget(self.txt_amount, 0, 3)
 
-        input_layout.addWidget(QLabel("Lý do:"), 1, 0)
+        input_layout.addWidget(QLabel("Reason:"), 1, 0)
         self.txt_reason = QLineEdit()
         input_layout.addWidget(self.txt_reason, 1, 1, 1, 3)
 
-        input_layout.addWidget(QLabel("Trạng thái:"), 2, 0)
+        input_layout.addWidget(QLabel("Status:"), 2, 0)
         self.cb_status = QComboBox()
         self.cb_status.addItems(["UNPAID", "PAID"])
         input_layout.addWidget(self.cb_status, 2, 1)
 
         self.main_layout.addWidget(input_frame)
 
-        # --- 3. Thanh công cụ (Buttons với hiệu ứng Hover) ---
+        # --- 3. Toolbar (Buttons with Hover effects) ---
         button_layout = QHBoxLayout()
         
-        self.btn_add = QPushButton("Thêm phiếu phạt")
-        self.btn_update = QPushButton("Cập nhật")
-        self.btn_delete = QPushButton("Xóa")
-        self.btn_clear = QPushButton("Làm mới Form")
+        self.btn_add = QPushButton("Add Fine")
+        self.btn_update = QPushButton("Update")
+        self.btn_delete = QPushButton("Delete")
+        self.btn_clear = QPushButton("Clear Form")
 
-        # Áp dụng Style Sheet cho các nút (bao gồm Hover)
+        # Apply Style Sheets
         self.btn_add.setStyleSheet("""
             QPushButton {
                 background-color: #4CAF50; color: white; border-radius: 5px; padding: 8px 15px; font-weight: bold;
@@ -168,7 +168,7 @@ class FinesInterface(QWidget):
         button_layout.addWidget(self.btn_clear)
         self.main_layout.addLayout(button_layout)
 
-        # --- 4. Bảng hiển thị ---
+        # --- 4. Display Table ---
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels([
             "Fine ID", "Member ID", "Borrow ID", "Amount", "Reason", "Status"
@@ -188,7 +188,7 @@ class PaymentsInterface(QWidget):
 
         self.controller = PaymentsController(self)
         
-        # Kết nối sự kiện
+        # Connect events
         self.btn_check_info.clicked.connect(self.controller.check_borrow_info)
         self.btn_pay.clicked.connect(self.controller.process_payment)
         self.btn_refresh.clicked.connect(self.controller.clear_form)
@@ -196,12 +196,12 @@ class PaymentsInterface(QWidget):
         self.btn_search.clicked.connect(self.controller.search_payments)    
         self.txt_search_input.returnPressed.connect(self.controller.search_payments)
         
-        # Thiết lập các ô tự động điền là ReadOnly để tránh sai sót
+        # Set auto-fill fields to ReadOnly
         self.txt_fine_id.setReadOnly(True)
         self.txt_base_fee.setReadOnly(True)
         self.txt_total_pay.setReadOnly(True)
 
-        # Load dữ liệu ban đầu
+        # Load initial data
         self.controller.load_payments_history()
 
     def setup_ui(self):
@@ -209,12 +209,12 @@ class PaymentsInterface(QWidget):
         self.main_layout.setContentsMargins(20, 20, 20, 20)
         self.main_layout.setSpacing(15)
 
-        # --- 1. Tiêu đề ---
-        self.label_title = QLabel("XỬ LÝ THANH TOÁN CHI PHÍ")
+        # --- 1. Title ---
+        self.label_title = QLabel("PAYMENT PROCESSING")
         self.label_title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1565C0;")
         self.main_layout.addWidget(self.label_title)
 
-        # --- 2. Khu vực Nhập liệu thông minh ---
+        # --- 2. Smart Input Area ---
         input_frame = QFrame()
         input_frame.setStyleSheet("""
             QFrame { background-color: #ffffff; border-radius: 10px; border: 1px solid #dcdde1; }
@@ -227,43 +227,43 @@ class PaymentsInterface(QWidget):
         form_layout.setContentsMargins(20, 20, 20, 20)
         form_layout.setSpacing(15)
 
-        # Dòng 1: Nhập Borrow ID và nút Kiểm tra
-        form_layout.addWidget(QLabel("Mã Mượn (Borrow ID):"), 0, 0)
+        # Row 1: Borrow ID and Check button
+        form_layout.addWidget(QLabel("Borrow ID:"), 0, 0)
         self.txt_borrow_id = QLineEdit()
-        self.txt_borrow_id.setPlaceholderText("Nhập ID và nhấn Enter hoặc Kiểm tra...")
+        self.txt_borrow_id.setPlaceholderText("Enter ID and press Enter or Check...")
         form_layout.addWidget(self.txt_borrow_id, 0, 1)
         
-        self.btn_check_info = QPushButton("Kiểm tra thông tin")
+        self.btn_check_info = QPushButton("Check Information")
         self.btn_check_info.setStyleSheet("background-color: #34495e; color: white; padding: 6px; font-weight: bold;")
         form_layout.addWidget(self.btn_check_info, 0, 2)
 
-        # Dòng 2: Thông tin Member và Fine (Tự động điền - Read only hoặc chỉnh sửa nếu cần)
-        form_layout.addWidget(QLabel("Mã Nhân viên (Staff ID):"), 1, 0)
+        # Row 2: Staff and Fine info
+        form_layout.addWidget(QLabel("Staff ID:"), 1, 0)
         self.txt_staff_id = QLineEdit() 
         form_layout.addWidget(self.txt_staff_id, 1, 1)
 
-        form_layout.addWidget(QLabel("Mã Phiếu Phạt (nếu có):"), 1, 2)
+        form_layout.addWidget(QLabel("Fine ID (if any):"), 1, 2)
         self.txt_fine_id = QLineEdit()
         form_layout.addWidget(self.txt_fine_id, 1, 3)
 
-        # Dòng 3: Các loại chi phí
-        form_layout.addWidget(QLabel("Tiền mượn sách (Gốc):"), 2, 0)
+        # Row 3: Fees
+        form_layout.addWidget(QLabel("Base Fee:"), 2, 0)
         self.txt_base_fee = QLineEdit() 
-        self.txt_base_fee.setPlaceholderText("Tiền mặc định...")
+        self.txt_base_fee.setPlaceholderText("Default fee...")
         form_layout.addWidget(self.txt_base_fee, 2, 1)
 
-        form_layout.addWidget(QLabel("Tiền phạt cộng thêm:"), 2, 2)
+        form_layout.addWidget(QLabel("Additional Fine:"), 2, 2)
         self.txt_fine_amount = QLineEdit()
         self.txt_fine_amount.setText("0")
         form_layout.addWidget(self.txt_fine_amount, 2, 3)
 
-        # Dòng 4: Tổng tiền và Phương thức
-        form_layout.addWidget(QLabel("TỔNG THANH TOÁN:"), 3, 0)
+        # Row 4: Total and Method
+        form_layout.addWidget(QLabel("TOTAL PAYMENT:"), 3, 0)
         self.txt_total_pay = QLineEdit()
         self.txt_total_pay.setStyleSheet("font-weight: bold; color: #e74c3c; font-size: 14px;")
         form_layout.addWidget(self.txt_total_pay, 3, 1)
 
-        form_layout.addWidget(QLabel("Phương thức trả:"), 3, 2)
+        form_layout.addWidget(QLabel("Payment Method:"), 3, 2)
         self.cb_method = QComboBox()
         self.cb_method.addItems(["CASH", "BANK", "MOMO", "CARD"])
         self.cb_method.setStyleSheet("padding: 5px; border: 1px solid #bdc3c7;")
@@ -271,16 +271,16 @@ class PaymentsInterface(QWidget):
 
         self.main_layout.addWidget(input_frame)
 
-        # --- 3. Thanh điều hướng chức năng ---
+        # --- 3. Functional Navigation ---
         button_layout = QHBoxLayout()
-        self.btn_pay = QPushButton("Xác nhận Thanh toán")
-        self.btn_delete = QPushButton("Xóa bản ghi")
-        self.btn_search = QPushButton("Tìm kiếm lịch sử")
-        self.btn_refresh = QPushButton("Làm mới")
+        self.btn_pay = QPushButton("Confirm Payment")
+        self.btn_delete = QPushButton("Delete Record")
+        self.btn_search = QPushButton("Search History")
+        self.btn_refresh = QPushButton("Refresh")
 
         self.txt_search_input = QLineEdit()
-        self.txt_search_input.setPlaceholderText("Nhập Borrow ID hoặc Mã GD để tìm...")
-        self.txt_search_input.setFixedWidth(250) # Đặt chiều rộng cố định cho đẹp
+        self.txt_search_input.setPlaceholderText("Enter Borrow ID or TXN No...")
+        self.txt_search_input.setFixedWidth(250)
 
         self.btn_pay.setStyleSheet("background-color: #27ae60; color: white; padding: 10px; font-weight: bold; border-radius: 5px;")
         self.btn_delete.setStyleSheet("background-color: #e74c3c; color: white; padding: 10px; font-weight: bold; border-radius: 5px;")
@@ -295,14 +295,13 @@ class PaymentsInterface(QWidget):
         button_layout.addWidget(self.btn_refresh)
         self.main_layout.addLayout(button_layout)
 
-        # --- 4. Bảng hiển thị (Đúng các cột bạn yêu cầu) ---
+        # --- 4. Display Table ---
         self.table_payments = QTableWidget(0, 9)
         self.table_payments.setHorizontalHeaderLabels([
             "Payment ID", "Member ID", "Payment Day", "Borrow ID",  
             "Fine ID", "Total Amount", "Method", "Staff ID", "TXN No."
         ])
         
-        # Cấu hình bảng chuyên nghiệp
         header = self.table_payments.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table_payments.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
