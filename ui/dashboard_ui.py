@@ -1,127 +1,147 @@
+# ui/dashboard_ui.py
+
 import matplotlib
-matplotlib.use('QtAgg')
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
+matplotlib.use("QtAgg")
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QGridLayout)
+    QWidget, QLabel, QVBoxLayout, QHBoxLayout,
+    QGridLayout, QFrame
+)
 from PyQt6.QtCore import Qt
+
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+from logic.dashboard_logic import DashboardLogic
+
 
 class DashboardInterface(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setup_ui()
+        self.logic = DashboardLogic()
+        self.init_ui()
+        self.load_data()
 
-    def setup_ui(self):
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(40, 70, 40, 40)
-        layout.setSpacing(30)
+    # ================= UI =================
+    def init_ui(self):
+        self.setStyleSheet("""
+            QWidget { background: #f4f6f9; font-family: Segoe UI; }
+            QLabel#title { font-size: 26px; font-weight: 700; }
+            QFrame.card { background: white; border-radius: 14px; padding: 18px; }
+            QLabel.cardValue { font-size: 30px; font-weight: bold; }
+            QLabel.cardTitle { color: #7f8c8d; font-size: 13px; }
+        """)
 
-        # Summary Cards
+        main = QVBoxLayout(self)
+        main.setContentsMargins(30, 25, 30, 30)
+        main.setSpacing(25)
+
+        title = QLabel("Library Management Dashboard")
+        title.setObjectName("title")
+        main.addWidget(title)
+
+        # ===== SUMMARY CARDS =====
         grid = QGridLayout()
-        grid.setSpacing(25)
+        grid.setSpacing(20)
 
-        # Sample data
-        cards = [
-            ("Total Books", "1,247", "#3498db"),
-            ("Currently Borrowed", "156", "#f39c12"),
-            ("Overdue Books", "23", "#e74c3c"),
-            ("Total Members", "482", "#2ecc71"),
-            ("Available Books", "800", "#f39c12"),
-            ("Unpaid Fines", "1,850,000 ₫", "#9b59b6"),
+        self.cards = {}
+        self.card_config = [
+            ("total_books", "Total Books", "#3498db"),
+            ("borrowed", "Borrowed Books", "#f39c12"),
+            ("overdue", "Overdue Books", "#e74c3c"),
+            ("members", "Members", "#2ecc71"),
+            ("available", "Available Books", "#1abc9c"),
+            ("fines", "Unpaid Fines", "#9b59b6"),
         ]
 
-        for i, (title, value, color) in enumerate(cards):
-            row = i // 3
-            col = i % 3
-            card = self._create_summary_card(title, value, color)
-            grid.addWidget(card, row, col)
+        for i, (key, title, color) in enumerate(self.card_config):
+            card = self.create_card(title, color)
+            self.cards[key] = card
+            grid.addWidget(card, i // 3, i % 3)
 
-        layout.addLayout(grid)
+        main.addLayout(grid)
 
-        # Charts Section - Split Left & Right
-        charts_container = QWidget()
-        charts_layout = QHBoxLayout(charts_container)
-        charts_layout.setSpacing(40)
+        # ===== CHARTS =====
+        charts = QHBoxLayout()
+        charts.setSpacing(20)
 
-        # LEFT: Borrowing Trends - Line Chart
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
-        left_layout.setSpacing(10)
+        self.borrow_chart = self.create_borrow_chart()
+        self.category_chart = self.create_category_chart()
 
-        trend_title = QLabel("Borrowing Trends (Last 12 Months)")
-        trend_title.setObjectName("chartTitle")
-        left_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        left_layout.addWidget(trend_title)
+        charts.addWidget(self.borrow_chart["frame"])
+        charts.addWidget(self.category_chart["frame"])
 
-        trend_fig = Figure(figsize=(8, 4), dpi=100)  # Slightly smaller for side-by-side
-        trend_canvas = FigureCanvas(trend_fig)
-        ax1 = trend_fig.add_subplot(111)
+        main.addLayout(charts)
 
-        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        borrows = [85, 92, 110, 105, 130, 145, 160, 152, 138, 125, 115, 140]
-
-        ax1.plot(months, borrows, marker='o', color='#3498db', linewidth=2.5)
-        ax1.set_xlabel("Month")
-        ax1.set_ylabel("Borrows")
-        ax1.grid(True, linestyle='--', alpha=0.7)
-        trend_canvas.setMinimumHeight(380)
-        left_layout.addWidget(trend_canvas)
-
-        charts_layout.addWidget(left_widget, stretch=1)
-
-        # RIGHT: Books by Category - Bar Chart
-        right_widget = QWidget()
-        right_layout = QVBoxLayout(right_widget)
-        right_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        right_layout.setSpacing(10)
-
-        cat_title = QLabel("Total Books by Category")
-        cat_title.setObjectName("chartTitle")
-        right_layout.addWidget(cat_title)
-
-        cat_fig = Figure(figsize=(8, 4), dpi=100)
-        cat_canvas = FigureCanvas(cat_fig)
-        ax2 = cat_fig.add_subplot(111)
-
-        categories = ['Fiction', 'Science', 'History', 'Tech', 'Literature', 'Others']
-        counts = [420, 280, 190, 150, 110, 97]
-
-        bars = ax2.bar(categories, counts, color=['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6', '#95a5a6'])
-        ax2.set_ylabel("Number of Books")
-        ax2.grid(axis='y', linestyle='--', alpha=0.7)
-
-        for bar in bars:
-            yval = bar.get_height()
-            ax2.text(bar.get_x() + bar.get_width() / 2, yval + 5, str(int(yval)), ha='center', va='bottom')
-
-        cat_canvas.setMinimumHeight(380)
-        right_layout.addWidget(cat_canvas)
-
-        charts_layout.addWidget(right_widget, stretch=1)
-
-        layout.addWidget(charts_container)
-        layout.addStretch()
-
-    def _create_summary_card(self, title, value, color):
-        card = QWidget()
-        card.setObjectName("summaryCard")
-
+    # ================= COMPONENTS =================
+    def create_card(self, title, color):
+        card = QFrame()
+        card.setProperty("class", "card")
         layout = QVBoxLayout(card)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.setSpacing(12)
 
-        val_lbl = QLabel(value)
-        val_lbl.setStyleSheet(f"font-size: 32px; font-weight: bold; color: {color};")
-        val_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(val_lbl)
+        value = QLabel("0")
+        value.setProperty("class", "cardValue")
+        value.setStyleSheet(f"color: {color}")
+        layout.addWidget(value)
 
-        title_lbl = QLabel(title)
-        title_lbl.setObjectName("cardTitle")
-        title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title_lbl)
+        text = QLabel(title)
+        text.setProperty("class", "cardTitle")
+        layout.addWidget(text)
 
+        card.value_label = value
         return card
+
+    def create_borrow_chart(self):
+        frame = QFrame()
+        frame.setProperty("class", "card")
+        layout = QVBoxLayout(frame)
+
+        layout.addWidget(QLabel("Borrowing Trends (12 Months)"))
+
+        fig = Figure(figsize=(5, 3))
+        canvas = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+
+        layout.addWidget(canvas)
+        return {"frame": frame, "ax": ax, "canvas": canvas}
+
+    def create_category_chart(self):
+        frame = QFrame()
+        frame.setProperty("class", "card")
+        layout = QVBoxLayout(frame)
+
+        layout.addWidget(QLabel("Books by Category"))
+
+        fig = Figure(figsize=(5, 3))
+        canvas = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+
+        layout.addWidget(canvas)
+        return {"frame": frame, "ax": ax, "canvas": canvas}
+
+    # ================= DATA =================
+    def load_data(self):
+        # SUMMARY
+        stats = self.logic.get_summary_stats()
+        for key, value in stats.items():
+            if key == "fines":
+                self.cards[key].value_label.setText(f"{value:,} ₫")
+            else:
+                self.cards[key].value_label.setText(str(value))
+
+        # LINE CHART
+        trend = self.logic.get_borrowing_trends()
+        ax = self.borrow_chart["ax"]
+        ax.clear()
+        ax.plot(trend["months"], trend["values"], marker="o")
+        ax.grid(True, linestyle="--", alpha=0.6)
+        self.borrow_chart["canvas"].draw()
+
+        # BAR CHART
+        cat = self.logic.get_books_by_category()
+        ax2 = self.category_chart["ax"]
+        ax2.clear()
+        ax2.bar(cat["categories"], cat["values"])
+        ax2.grid(axis="y", linestyle="--", alpha=0.6)
+        self.category_chart["canvas"].draw()
