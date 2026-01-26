@@ -122,6 +122,7 @@ class DashboardInterface(QWidget):
 
     # ================= DATA =================
     def load_data(self):
+        
         # SUMMARY
         stats = self.logic.get_summary_stats()
         for key, value in stats.items():
