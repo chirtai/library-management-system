@@ -1,5 +1,5 @@
 from database.db_connection import db
-from PyQt6.QtWidgets import QMessageBox, QTableWidgetItem,QPushButton
+from PyQt6.QtWidgets import QMessageBox, QTableWidgetItem, QPushButton
 from PyQt6.QtCore import Qt
 from datetime import datetime
 import math
@@ -13,36 +13,34 @@ class FinesController:
         self.ui.table.setShowGrid(True)
         self.ui.table.setStyleSheet("""
             QTableWidget {
-                gridline-color: #d0d0d0; /* Màu xám rõ rệt cho dòng kẻ */
+                gridline-color: #d0d0d0; /* Distinct gray for grid lines */
                 border: none;
             }
             QTableWidget::item {
-                border-bottom: 1px solid #d0d0d0; /* Vẽ dòng kẻ ngang thủ công */
+                border-bottom: 1px solid #d0d0d0; /* Manual horizontal lines */
                 padding: 5px;
             }
         """)
 
-        
-
-        """Truy vấn dữ liệu từ SQL và đổ vào bảng QTableWidget"""
-        # Câu lệnh SQL kết hợp 3 bảng để lấy tên thành viên
+        """Query data from SQL and populate QTableWidget"""
+        # SQL query combining 3 tables to get member info
         query = """
             SELECT 
                 f.fine_id, 
-                u.user_id,     -- Cột 1
-                f.borrow_id,   -- Cột 2
-                f.amount,      -- Cột 3
-                f.reason,      -- Cột 4
-                f.payment_status -- Cột 5
+                u.user_id,     -- Column 1
+                f.borrow_id,   -- Column 2
+                f.amount,      -- Column 3
+                f.reason,      -- Column 4
+                f.payment_status -- Column 5
             FROM Fines f
             LEFT JOIN Borrowing b ON f.borrow_id = b.borrow_id
             LEFT JOIN Users u ON b.user_id = u.user_id
             ORDER BY f.fine_id DESC
         """
-        # Thực hiện truy vấn qua đối tượng db
+        # Execute query via db object
         rows = db.execute_query(query, fetch=True)
         
-        # Xóa dữ liệu cũ trên bảng giao diện
+        # Clear old data from UI table
         self.ui.table.setRowCount(0)
         
         if rows:
@@ -50,26 +48,26 @@ class FinesController:
                 self.ui.table.insertRow(row_idx)
                 self.ui.table.setRowHeight(row_idx, 60)
                 for col_idx, value in enumerate(row_data):
-                    # Hiển thị dữ liệu dạng văn bản vào từng ô
+                    # Display text data in cells
                     item = QTableWidgetItem(str(value))
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                     self.ui.table.setItem(row_idx, col_idx, item)
                 
-                # Logic hiển thị nút "Thanh toán" ở cột cuối cùng
-                status = row_data[5] # C    
+                # Logic to display "Pay" button in the last column
+                status = row_data[5]    
                 if status == 'UNPAID':
-                    btn_pay = QPushButton("Thanh toán")
+                    btn_pay = QPushButton("Pay")
                     btn_pay.setStyleSheet("background-color: #4CAF50; color: white; border-radius: 3px;")
-                    # Kết nối nút Pay với hàm xử lý thanh toán
+                    # Connect Pay button to payment handler
                     btn_pay.clicked.connect(lambda _, r=row_idx: self.handle_payment(r))
                     self.ui.table.setCellWidget(row_idx, 6, btn_pay)
                 else:
-                    paid_item = QTableWidgetItem("Đã xong")
+                    paid_item = QTableWidgetItem("Completed")
                     paid_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                     self.ui.table.setItem(row_idx, 6, paid_item)
 
     def add_fine(self):
-        """Thêm mới phiếu phạt dựa trên dữ liệu từ Form"""
+        """Add new fine based on Form data"""
         borrow_id = self.ui.txt_borrow_id.text().strip()
         amount = self.ui.txt_amount.text()
         reason = self.ui.txt_reason.text()
@@ -79,29 +77,29 @@ class FinesController:
         exists = db.execute_query(check_query, (borrow_id,), fetch="one")
 
         if not borrow_id or not amount:
-            QMessageBox.warning(self.ui, "Lỗi", "Vui lòng nhập Borrow ID và Số tiền!")
+            QMessageBox.warning(self.ui, "Error", "Please enter Borrow ID and Amount!")
             return
         
         if not exists:
-            QMessageBox.critical(self.ui, "Lỗi dữ liệu", 
-                                f"Mã mượn (Borrow ID) {borrow_id} không tồn tại trong hệ thống!")
+            QMessageBox.critical(self.ui, "Data Error", 
+                                f"Borrow ID {borrow_id} does not exist in the system!")
             return
 
         query = "INSERT INTO Fines (borrow_id, amount, reason, payment_status) VALUES (?, ?, ?, ?)"
         success = db.execute_query(query, (borrow_id, amount, reason, status), commit=True)
         
         if success:
-            QMessageBox.information(self.ui, "Thành công", "Đã thêm phiếu phạt!")
+            QMessageBox.information(self.ui, "Success", "Fine added successfully!")
             self.load_data()
             self.clear_form()
         else:
-            QMessageBox.critical(self.ui, "Lỗi", "Không thể thêm. Hãy kiểm tra lại Borrow ID!")
+            QMessageBox.critical(self.ui, "Error", "Could not add fine. Please check Borrow ID!")
 
     def update_fine(self):
-        """Cập nhật phiếu phạt đang được chọn"""
+        """Update selected fine"""
         selected_row = self.ui.table.currentRow()
         if selected_row < 0:
-            QMessageBox.warning(self.ui, "Thông báo", "Vui lòng chọn một dòng để sửa!")
+            QMessageBox.warning(self.ui, "Notice", "Please select a row to edit!")
             return
 
         fine_id = self.ui.table.item(selected_row, 0).text()
@@ -109,15 +107,15 @@ class FinesController:
         params = (self.ui.txt_amount.text(), self.ui.txt_reason.text(), self.ui.cb_status.currentText(), fine_id)
         
         if db.execute_query(query, params, commit=True):
-            QMessageBox.information(self.ui, "Thành công", "Đã cập nhật dữ liệu!")
+            QMessageBox.information(self.ui, "Success", "Data updated successfully!")
             self.load_data()
 
     def delete_fine(self):
-        """Xóa phiếu phạt dựa trên Fine ID"""
+        """Delete fine based on Fine ID"""
         selected_row = self.ui.table.currentRow()
         if selected_row >= 0:
             fine_id = self.ui.table.item(selected_row, 0).text()
-            confirm = QMessageBox.question(self.ui, "Xác nhận", f"Xóa phiếu phạt {fine_id}?", 
+            confirm = QMessageBox.question(self.ui, "Confirm", f"Delete fine {fine_id}?", 
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
             
             if confirm == QMessageBox.StandardButton.Yes:
@@ -126,7 +124,7 @@ class FinesController:
                 self.clear_form()
 
     def clear_form(self):
-        """Làm trống các ô nhập liệu"""
+        """Clear input fields"""
         self.ui.txt_borrow_id.clear()
         self.ui.txt_borrow_id.setReadOnly(False)
         self.ui.txt_amount.clear()
@@ -137,6 +135,10 @@ class FinesController:
 class PaymentsController:
     def __init__(self, ui_instance):
         self.ui = ui_instance
+
+        self.ui.btn_delete.setObjectName("btn_delete")
+        self.ui.btn_pay.setObjectName("btn_pay")
+
         button_qss = """
             QPushButton {
                 border-radius: 6px;
@@ -145,55 +147,58 @@ class PaymentsController:
                 font-weight: bold;
                 border: none;
             }
-            /* Nút Xác nhận (Xanh lá) */
-            QPushButton#btn_pay { background-color: #28a745; }
-            QPushButton#btn_pay:hover { background-color: #218838; }
-            QPushButton#btn_pay:pressed { background-color: #1e7e34; }
+            /* Confirm Button (Green) */
+            QPushButton#btn_pay { 
+                background-color: #28a745; 
+            }
+            QPushButton#btn_pay:hover { 
+                background-color: #218838; 
+            }
 
-            /* Nút Xóa (Đỏ) */
-            QPushButton#btn_delete { background-color: #dc3545; }
-            QPushButton#btn_delete:hover { background-color: #c82333; }
-
-            /* Nút Kiểm tra (Xanh đen/Xám) */
-            QPushButton#btn_check { background-color: #34495e; }
-            QPushButton#btn_check:hover { background-color: #2c3e50; }
+            /* Delete Button (Red) - Đã sửa ở đây */
+            QPushButton#btn_delete { 
+                background-color: #dc3545; 
+            }
+            QPushButton#btn_delete:hover { 
+                background-color: #c82333; 
+            }
+            QPushButton#btn_delete:pressed { 
+                background-color: #a71d2a; 
+            }
         """
         self.ui.btn_pay.setStyleSheet(button_qss)
         self.ui.btn_delete.setStyleSheet(button_qss)
-        # Nếu nút kiểm tra có tên là btn_check_info hoặc tương tự:
         if hasattr(self.ui, 'btn_check'): 
             self.ui.btn_check.setStyleSheet(button_qss)
 
     def check_staff_exists(self, staff_id):
-        """Kiểm tra xem Staff ID có tồn tại trong bảng Users không"""
+        """Check if Staff ID exists in Users table"""
         query = "SELECT full_name FROM Users WHERE user_id = ?"
-        # Sử dụng db.execute_query từ file db_connection của bạn
         result = db.execute_query(query, (staff_id,), fetch="one")
         return result[0] if result else None
     
     def check_borrow_info(self):
-        """Kiểm tra thông tin và tự động điền các ô nhập liệu"""
+        """Check info and auto-fill input fields"""
         borrow_id = self.ui.txt_borrow_id.text()
         if not borrow_id:
-            QMessageBox.warning(self.ui, "Lỗi", "Vui lòng nhập Mã mượn!")
+            QMessageBox.warning(self.ui, "Error", "Please enter Borrow ID!")
             return
 
-        # 1. Lấy thông tin từ bảng BorrowingRecords
+        # 1. Get info from Borrowing table
         query_borrow = "SELECT user_id, borrow_date, due_date FROM Borrowing WHERE borrow_id = ?"
         borrow_data = db.execute_query(query_borrow, (borrow_id,), fetch="one")
 
         if borrow_data:
             user_id, b_date, d_date = borrow_data
 
-            # 2. Tính tiền mượn sách gốc = (due_date - borrow_date) * 10000
-            # Lưu ý: d_date và b_date là kiểu date/datetime từ SQL Server
+            # 2. Calculate base fee = (due_date - borrow_date) * 10000 logic
             delta = d_date - b_date
-            total_days = max(0, delta.days) # Không tính ngày âm nếu trả sớm
+            total_days = max(0, delta.days) 
             periods = math.ceil(total_days / 2) if total_days > 0 else 0
             base_fee = periods * 10000
             self.ui.txt_base_fee.setText(str(base_fee))
 
-            # 3. Kiểm tra xem có phiếu phạt (Fine) nào cho mã mượn này không
+            # 3. Check for UNPAID Fines linked to this borrow_id
             query_fine = "SELECT fine_id, amount FROM Fines WHERE borrow_id = ? AND payment_status = 'UNPAID'"
             fine_data = db.execute_query(query_fine, (borrow_id,), fetch="one")
 
@@ -212,10 +217,10 @@ class PaymentsController:
 
             self.ui.txt_total_pay.setText(str(total))
         else:
-            QMessageBox.critical(self.ui, "Lỗi", "Không tìm thấy Mã mượn này!")
+            QMessageBox.critical(self.ui, "Error", "Borrow ID not found!")
 
     def process_payment(self):
-        """Xác nhận thanh toán và cập nhật trạng thái Fine"""
+        """Confirm payment and update Fine status"""
         borrow_id = self.ui.txt_borrow_id.text().strip()
         fine_id = self.ui.txt_fine_id.text().strip()
         total_amount = self.ui.txt_total_pay.text().strip()
@@ -223,33 +228,32 @@ class PaymentsController:
         staff_id = self.ui.txt_staff_id.text().strip()
 
         if not staff_id or not total_amount:
-            QMessageBox.warning(self.ui, "Lỗi", "Chưa có thông tin thanh toán!")
+            QMessageBox.warning(self.ui, "Error", "Payment information missing!")
             return
-           
+            
         try:
-
             if fine_id:
                 check_query = "SELECT payment_id FROM Payments WHERE fine_id = ?"
                 exists = db.execute_query(check_query, (fine_id,), fetch="one")
             else:
-                # Đối với thanh toán gốc (không phạt), kiểm tra xem borrow_id này đã trả tiền chưa
+                # Check if base payment exists for this borrow_id
                 check_query = "SELECT payment_id FROM Payments WHERE borrow_id = ? AND fine_id IS NULL"
                 exists = db.execute_query(check_query, (borrow_id,), fetch="one")
 
             if exists:
-                QMessageBox.warning(self.ui, "Thông báo", f"Giao dịch cho Mã mượn {borrow_id} đã tồn tại trong lịch sử!")
-                return # Dừng thực hiện nếu đã tồn tại
+                QMessageBox.warning(self.ui, "Notice", f"Transaction for Borrow ID {borrow_id} already exists in history!")
+                return 
 
             staff_id = int(staff_id)
             staff_name = self.check_staff_exists(staff_id)
             if not staff_name:
-                QMessageBox.critical(self.ui, "Lỗi xác thực",
-                                     f"Nhân viên có ID {staff_id} không tồn tại trong hệ thống!")
+                QMessageBox.critical(self.ui, "Authentication Error",
+                                     f"Staff with ID {staff_id} does not exist in the system!")
                 return
         
             f_id = int(fine_id) if fine_id else None
             trans_no = f"PAY{random.randint(1000, 9999)}"
-            # 1. Thêm bản ghi vào bảng Payments
+            # 1. Add record to Payments table
             query_pay = """
                 INSERT INTO Payments (fine_id, amount_paid, payment_date, payment_method, transaction_no, staff_id, borrow_id)
             VALUES (?, ?, GETDATE(), ?, ?, ?, ?)
@@ -261,17 +265,16 @@ class PaymentsController:
                 if f_id:
                     db.execute_query("UPDATE Fines SET payment_status = 'PAID' WHERE fine_id = ?", (f_id,), commit=True)
             
-                QMessageBox.information(self.ui, "Thành công", f"Hóa đơn {trans_no} đã được lưu bởi NV {staff_id}!")
+                QMessageBox.information(self.ui, "Success", f"Invoice {trans_no} saved by Staff {staff_id}!")
                 self.load_payments_history()
                 self.clear_form()
             else:
-                QMessageBox.critical(self.ui, "Lỗi", "Không thể lưu bản ghi thanh toán!")
+                QMessageBox.critical(self.ui, "Error", "Could not save payment record!")
         except Exception as e:
-            print(f"Lỗi thanh toán: {e}")
+            print(f"Payment error: {e}")
 
     def load_payments_history(self):
-        """Hiển thị lịch sử: Lấy Member ID thông qua bảng trung gian"""
-        # Join Payments -> Fines -> BorrowingRecords để lấy user_id
+        """Display history: Get Member ID via intermediate tables"""
         query = """
                SELECT 
                 p.payment_id, 
@@ -300,22 +303,19 @@ class PaymentsController:
                     self.ui.table_payments.setItem(row_idx, col_idx, item)
 
     def search_payments(self):
-        """Sửa lỗi tìm kiếm mã giao dịch không ra kết quả"""
-        # Lấy từ đúng ô txt_search_input trên giao diện
+        """Search payments by Borrow ID or Transaction Number"""
         keyword = self.ui.txt_search_input.text().strip()
         
         if not keyword:
             self.load_payments_history()
             return
 
-        # Khởi tạo câu lệnh SQL với
-        # Sử dụng UPPER để không phân biệt chữ hoa/thường
         query = """
             SELECT 
                 p.payment_id, 
-                b.user_id,        -- Lấy Member ID từ Borrowing
+                b.user_id,        -- Get Member ID from Borrowing
                 p.payment_date, 
-                p.borrow_id,      -- Lấy từ Payments
+                p.borrow_id,      -- Get from Payments
                 p.fine_id, 
                 p.amount_paid, 
                 p.payment_method, 
@@ -329,63 +329,58 @@ class PaymentsController:
             ORDER BY p.payment_date DESC
         """
         
-        # Chuẩn bị tham số: Tìm chính xác ID hoặc tìm gần đúng Mã GD
-        # Thêm dấu % vào tham số thay vì nối chuỗi trong SQL để an toàn hơn
         search_pattern = f"%{keyword}%"
         params = (keyword, search_pattern)
 
         try:
-            rows = db.execute_query(query, params, fetch=True) #
+            rows = db.execute_query(query, params, fetch=True) 
             
             self.ui.table_payments.setRowCount(0)
             if rows:
                 for row_idx, row_data in enumerate(rows):
                     self.ui.table_payments.insertRow(row_idx)
-                    self.ui.table_payments.setRowHeight(row_idx, 60) #
+                    self.ui.table_payments.setRowHeight(row_idx, 60) 
                     for col_idx, value in enumerate(row_data):
                         display_val = str(value) if value is not None else "N/A"
                         item = QTableWidgetItem(display_val)
                         item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                         self.ui.table_payments.setItem(row_idx, col_idx, item)
             else:
-                QMessageBox.information(self.ui, "Kết quả", f"Không tìm thấy dữ liệu cho: {keyword}")
+                QMessageBox.information(self.ui, "Results", f"No data found for: {keyword}")
         except Exception as e:
-            print(f"Lỗi SQL: {e}")
+            print(f"SQL Error: {e}")
 
     def delete_payment(self):
-        """Xóa bản ghi thanh toán đang được chọn trên bảng"""
+        """Delete selected payment record from table"""
         selected_row = self.ui.table_payments.currentRow()
         if selected_row < 0:
-            QMessageBox.warning(self.ui, "Lỗi", "Vui lòng chọn một bản ghi trong bảng để xóa!")
+            QMessageBox.warning(self.ui, "Error", "Please select a record from the table to delete!")
             return
 
-        # Lấy Payment ID và Fine ID từ hàng đang chọn
         payment_id = self.ui.table_payments.item(selected_row, 0).text()
-        fine_id_str = self.ui.table_payments.item(selected_row, 4).text() # Cột Fine ID
+        fine_id_str = self.ui.table_payments.item(selected_row, 4).text() 
         
         confirm = QMessageBox.question(
-            self.ui, "Xác nhận", 
-            f"Bạn có chắc chắn muốn xóa bản ghi thanh toán ID: {payment_id}?",
+            self.ui, "Confirm", 
+            f"Are you sure you want to delete payment record ID: {payment_id}?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
         if confirm == QMessageBox.StandardButton.Yes:
             try:
-                # 1. Nếu có Fine ID (không phải N/A), cập nhật lại trạng thái UNPAID cho phiếu phạt
+                # 1. If Fine ID exists, revert status to UNPAID
                 if fine_id_str != "N/A":
-                    #
                     db.execute_query(
                         "UPDATE Fines SET payment_status = 'UNPAID' WHERE fine_id = ?", 
                         (fine_id_str,), commit=True
                     )
 
-                # 2. Xóa bản ghi trong bảng Payments
-                #
+                # 2. Delete from Payments table
                 if db.execute_query("DELETE FROM Payments WHERE payment_id = ?", (payment_id,), commit=True):
-                    QMessageBox.information(self.ui, "Thành công", "Đã xóa bản ghi thanh toán!")
+                    QMessageBox.information(self.ui, "Success", "Payment record deleted!")
                     self.load_payments_history()
             except Exception as e:
-                QMessageBox.critical(self.ui, "Lỗi", f"Không thể xóa: {str(e)}")
+                QMessageBox.critical(self.ui, "Error", f"Could not delete: {str(e)}")
 
     def clear_form(self):
         self.ui.txt_borrow_id.clear()
@@ -393,4 +388,4 @@ class PaymentsController:
         self.ui.txt_fine_id.clear()
         self.ui.txt_base_fee.clear()
         self.ui.txt_fine_amount.setText("0")
-        self.ui.txt_total_pay.clear()        
+        self.ui.txt_total_pay.clear()
