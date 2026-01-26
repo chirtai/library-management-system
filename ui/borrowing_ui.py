@@ -40,3 +40,4 @@ class BorrowingInterface(QWidget):
         tabs.addTab(history_tab, "Borrowing History")
 
         layout.addWidget(tabs)
+        

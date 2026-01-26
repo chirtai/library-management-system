@@ -5,7 +5,7 @@ class Database:
     def __init__(self):
         self.conn_str = (
             "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=LAPTOP-83D1I5E5;"
+    "SERVER=localhost\\SQLEXPRESS;"
     "DATABASE=LibraryManagement;"
     "Trusted_Connection=yes;"
         )
