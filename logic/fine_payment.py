@@ -29,14 +29,15 @@ class FinesController:
         query = """
             SELECT 
                 f.fine_id, 
-                u.user_id   , 
-                f.borrow_id, 
-                f.amount, 
-                f.reason, 
-                f.payment_status
+                u.user_id,     -- Cột 1
+                f.borrow_id,   -- Cột 2
+                f.amount,      -- Cột 3
+                f.reason,      -- Cột 4
+                f.payment_status -- Cột 5
             FROM Fines f
-            JOIN Borrowing b ON f.borrow_id = b.borrow_id
-            JOIN Users u ON b.user_id = u.user_id
+            LEFT JOIN Borrowing b ON f.borrow_id = b.borrow_id
+            LEFT JOIN Users u ON b.user_id = u.user_id
+            ORDER BY f.fine_id DESC
         """
         # Thực hiện truy vấn qua đối tượng db
         rows = db.execute_query(query, fetch=True)
@@ -55,7 +56,7 @@ class FinesController:
                     self.ui.table.setItem(row_idx, col_idx, item)
                 
                 # Logic hiển thị nút "Thanh toán" ở cột cuối cùng
-                status = row_data[5] # Cột payment_status
+                status = row_data[5] # C    
                 if status == 'UNPAID':
                     btn_pay = QPushButton("Thanh toán")
                     btn_pay.setStyleSheet("background-color: #4CAF50; color: white; border-radius: 3px;")
@@ -69,13 +70,21 @@ class FinesController:
 
     def add_fine(self):
         """Thêm mới phiếu phạt dựa trên dữ liệu từ Form"""
-        borrow_id = self.ui.txt_borrow_id.text()
+        borrow_id = self.ui.txt_borrow_id.text().strip()
         amount = self.ui.txt_amount.text()
         reason = self.ui.txt_reason.text()
         status = self.ui.cb_status.currentText()
 
+        check_query = "SELECT borrow_id FROM Borrowing WHERE borrow_id = ?"
+        exists = db.execute_query(check_query, (borrow_id,), fetch="one")
+
         if not borrow_id or not amount:
             QMessageBox.warning(self.ui, "Lỗi", "Vui lòng nhập Borrow ID và Số tiền!")
+            return
+        
+        if not exists:
+            QMessageBox.critical(self.ui, "Lỗi dữ liệu", 
+                                f"Mã mượn (Borrow ID) {borrow_id} không tồn tại trong hệ thống!")
             return
 
         query = "INSERT INTO Fines (borrow_id, amount, reason, payment_status) VALUES (?, ?, ?, ?)"
@@ -242,11 +251,11 @@ class PaymentsController:
             trans_no = f"PAY{random.randint(1000, 9999)}"
             # 1. Thêm bản ghi vào bảng Payments
             query_pay = """
-                INSERT INTO Payments (fine_id, amount_paid, payment_date, payment_method, transaction_no, staff_id)
-            VALUES (?, ?, GETDATE(), ?, ?, ?)
+                INSERT INTO Payments (fine_id, amount_paid, payment_date, payment_method, transaction_no, staff_id, borrow_id)
+            VALUES (?, ?, GETDATE(), ?, ?, ?, ?)
             """
             
-            params = (f_id, total_amount, method, trans_no, int(staff_id))
+            params = (f_id, total_amount, method, trans_no, int(staff_id), int(borrow_id))
 
             if db.execute_query(query_pay, params, commit=True):
                 if f_id:
@@ -264,20 +273,19 @@ class PaymentsController:
         """Hiển thị lịch sử: Lấy Member ID thông qua bảng trung gian"""
         # Join Payments -> Fines -> BorrowingRecords để lấy user_id
         query = """
-                SELECT 
-                    p.[payment_id], 
-                    b.[user_id], 
-                    p.[payment_date], 
-                    b.[borrow_id], 
-                    p.[fine_id], 
-                    p.[amount_paid], 
-                    p.[payment_method], 
-                    p.[staff_id],
-                    p.[transaction_no]
-                FROM [Payments] p
-                LEFT JOIN [Fines] f ON p.[fine_id] = f.[fine_id]
-                LEFT JOIN [Borrowing] b ON f.[borrow_id] = b.[borrow_id]
-            ORDER BY p.[payment_date] DESC
+               SELECT 
+                p.payment_id, 
+                b.user_id,     -- Member ID
+                p.payment_date, 
+                p.borrow_id, 
+                p.fine_id, 
+                p.amount_paid, 
+                p.payment_method, 
+                p.staff_id,
+                p.transaction_no
+            FROM Payments p
+            LEFT JOIN Borrowing b ON p.borrow_id = b.borrow_id
+            ORDER BY p.payment_date DESC
         """
         rows = db.execute_query(query, fetch=True)
         self.ui.table_payments.setRowCount(0)
@@ -304,16 +312,21 @@ class PaymentsController:
         # Sử dụng UPPER để không phân biệt chữ hoa/thường
         query = """
             SELECT 
-                p.[payment_id], b.[user_id], p.[payment_date], 
-                b.[borrow_id], p.[fine_id], p.[amount_paid], 
-                p.[payment_method], p.[staff_id], p.[transaction_no]
-            FROM [Payments] p
-            LEFT JOIN [Fines] f ON p.[fine_id] = f.[fine_id]
-            LEFT JOIN [Borrowing] b ON f.[borrow_id] = b.[borrow_id]
+                p.payment_id, 
+                b.user_id,        -- Lấy Member ID từ Borrowing
+                p.payment_date, 
+                p.borrow_id,      -- Lấy từ Payments
+                p.fine_id, 
+                p.amount_paid, 
+                p.payment_method, 
+                p.staff_id,
+                p.transaction_no
+            FROM Payments p
+            LEFT JOIN Borrowing b ON p.borrow_id = b.borrow_id
             WHERE 
-                CAST(b.[borrow_id] AS VARCHAR) = ? 
-                OR UPPER(p.[transaction_no]) LIKE UPPER(?)
-            ORDER BY p.[payment_date] DESC
+                CAST(p.borrow_id AS VARCHAR) = ? 
+                OR UPPER(p.transaction_no) LIKE UPPER(?)
+            ORDER BY p.payment_date DESC
         """
         
         # Chuẩn bị tham số: Tìm chính xác ID hoặc tìm gần đúng Mã GD
