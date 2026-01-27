@@ -11,7 +11,11 @@ class BookInterface(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setup_ui()
-# ------------ BOOK MANAGEMENT INTERFACE ----------------
+        self.btn_add_book.clicked.connect(self.add_book)
+        self.btn_edit_book.clicked.connect(self.edit_book)
+        self.btn_delete_book.clicked.connect(self.delete_book)
+
+    # ------------ BOOK MANAGEMENT INTERFACE ----------------
     def setup_ui(self):
         layout = QVBoxLayout(self)
 
@@ -56,3 +60,68 @@ class BookInterface(QWidget):
             self.books_action_layout.addWidget(btn)
 
         layout.addLayout(self.books_action_layout)
+    # ===== CRUD LOGIC =====
+    def add_book(self):
+    dialog = BookDialog(self)
+    if dialog.exec():
+        data = dialog.get_data()
+
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+
+        self.table.setItem(row, 0, QTableWidgetItem(""))
+
+        values = [
+            data["title"],
+            data["author"],
+            data["category"],
+            data["publisher"],
+            data["year"],
+            "1",
+            "1"
+        ]
+
+        for col, val in enumerate(values, start=1):
+            self.table.setItem(row, col, QTableWidgetItem(val))
+
+
+    def edit_book(self):
+        row = self.table.currentRow()
+        if row < 0:
+            QMessageBox.warning(self, "Warning", "Please select a book to edit.")
+            return
+
+        book = {
+            "title": self.table.item(row, 1).text(),
+            "author": self.table.item(row, 2).text(),
+            "category": self.table.item(row, 3).text(),
+            "publisher": self.table.item(row, 4).text(),
+            "year": self.table.item(row, 5).text(),
+        }
+
+        dialog = BookDialog(self, book)
+        if dialog.exec():
+            data = dialog.get_data()
+
+            self.table.item(row, 1).setText(data["title"])
+            self.table.item(row, 2).setText(data["author"])
+            self.table.item(row, 3).setText(data["category"])
+            self.table.item(row, 4).setText(data["publisher"])
+            self.table.item(row, 5).setText(data["year"])
+
+    def delete_book(self):
+        row = self.table.currentRow()
+        if row < 0:
+            QMessageBox.warning(self, "Warning", "Please select a book to delete.")
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            "Are you sure you want to delete this book?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.table.removeRow(row)
+
