@@ -31,14 +31,14 @@ class BookInterface(QWidget):
         layout.addLayout(top_bar)
 
         # Books table
-        table = QTableWidget(0, 8)
-        table.setHorizontalHeaderLabels([
+        self.table = QTableWidget(0, 8)
+        self.table.setHorizontalHeaderLabels([
             "ID", "Title", "Author", "Category", "Publisher", "Year", "Total Copies", "Available"
         ])
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        layout.addWidget(table)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        layout.addWidget(self.table)
 
         # Buttons (Add, Edit, Delete - visible only to Admin/Librarian)
         self.books_action_layout = QHBoxLayout()
