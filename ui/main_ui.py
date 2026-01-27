@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
         # Create pages
         self.dashboard_page = DashboardInterface(self)
         self.books_page = BookInterface(self)
-        self.borrow_page = BorrowingInterface(self)
+        self.borrow_page = BorrowingInterface(parent=self)
         self.members_page = MemberInterface(self)
         self.fines_page = MainApp(self)
 
@@ -170,7 +170,6 @@ class MainWindow(QMainWindow):
 
     def refresh_borrow(self):
         pass
-
     def refresh_members(self):
         self.members_page.load_pending_members()
         self.members_page.load_approved_members()

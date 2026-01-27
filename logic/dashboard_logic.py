@@ -50,10 +50,10 @@ class DashboardLogic:
     def get_books_by_category(self):
         # Join bảng Books và Categories để đếm
         query = """
-            SELECT c.category_name, COUNT(b.book_id)
+            SELECT c.name, COUNT(b.book_id)
             FROM Categories c
             LEFT JOIN Books b ON c.category_id = b.category_id
-            GROUP BY c.category_name
+            GROUP BY c.name
         """
         rows = db.execute_query(query, fetch=True)
         

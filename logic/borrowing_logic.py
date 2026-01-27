@@ -1,80 +1,185 @@
-from datetime import datetime, date
-from PyQt6.QtWidgets import QMessageBox, QTableWidgetItem, QWidget
-from PyQt6.QtCore import Qt
+from database.db_connection import db
+from datetime import datetime, date, timedelta
+from typing import List, Dict, Optional, Tuple
 
-class BorrowingInterfaceLogic:
-    def __init__(self, ui_instance):
-        self.ui = ui_instance
-        # DATA STORE (Book Database)
-        self.book_db = {
-            "B001": {"title": "Dế Mèn Phiêu Lưu Kí", "status": "Available"}, 
-            "B002": {"title": "Sherlock Holmes", "status": "Borrowed"}
-        }
+class BorrowingLogic:
+    FINE_PER_DAY = 5000  # ₫ per day late
 
-    # DFD: Check book availability
-    def check_availability(self, book_id):
-        book = self.book_db.get(book_id)
-        return book and book["status"] == "Available"
+    def __init__(self):
+        self.db = db
 
-    # DFD: Create borrowing record
-    def process_borrow_request(self, member_name, book_id):
-        if not self.check_availability(book_id):
-            QMessageBox.warning(self.ui, "Notification", "Book is not available!")
-            return
+    def get_current_borrows(self) -> List[Dict]:
+        """Get list of currently borrowed books (not yet returned)"""
+        query = """
+        SELECT 
+            b.borrow_id,
+            bk.title,
+            u.full_name,
+            b.borrow_date,
+            b.due_date,
+            CASE 
+                WHEN b.return_date IS NULL AND b.due_date < CAST(GETDATE() AS DATE) 
+                THEN 'OVERDUE'
+                ELSE 'BORROWED'
+            END AS status
+        FROM Borrowing b
+        JOIN Books bk ON b.book_id = bk.book_id
+        JOIN Users u ON b.user_id = u.user_id
+        WHERE b.return_date IS NULL
+        ORDER BY b.borrow_date DESC
+        """
+        results = self.db.execute_query(query, fetch=True)
+        if not results:
+            return []
 
-        # DFD: Update book status (to Borrowed)
-        self.book_db[book_id]["status"] = "Borrowed"
-        
-        borrow_date = date.today().strftime("%Y-%m-%d")
-        due_date = "2026-02-10" 
-        
-        # DFD: Save borrowing record (Update UI)
-        row = self.ui.current_table.rowCount()
-        self.ui.current_table.insertRow(row)
-        data = [book_id, self.book_db[book_id]["title"], member_name, borrow_date, due_date, "Borrowed"]
-        for col, value in enumerate(data):
-            self.ui.current_table.setItem(row, col, QTableWidgetItem(str(value)))
-            
-        QMessageBox.information(self.ui, "Success", f"Librarian approved borrowing for {member_name}")
+        return [
+            {
+                "borrow_id": row[0],
+                "title": row[1],
+                "full_name": row[2],
+                "borrow_date": row[3],
+                "due_date": row[4],
+                "status": row[5]
+            }
+            for row in results
+        ]
 
-    # DFD: Return book & Calculate fine
-    def process_return_book(self, row_index, book_id, return_date_str):
-        # Assume due date is 2026-01-20
-        due_date = date(2026, 1, 20)
-        return_date = datetime.strptime(return_date_str, "%Y-%m-%d").date()
-        
-        # DFD: Late days flow
-        late_days = (return_date - due_date).days
-        fine = 0
-        if late_days > 0:
-            # DFD: Calculate fine (Example: 5000 units per day)
-            fine = late_days * 5000 
-            
-        # DFD: Fine payment request & Payment result
-        paid_status = "N/A"
-        if fine > 0:
-            reply = QMessageBox.question(self.ui, "Payment", 
-                                       f"Overdue by {late_days} days. Fine: {fine} USD. Paid?",
-                                       QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            paid_status = "Yes" if reply == QMessageBox.StandardButton.Yes else "No"
+    def get_borrowing_history(self) -> List[Dict]:
+        """Get complete borrowing history with fines"""
+        query = """
+        SELECT 
+            bk.title,
+            u.full_name,
+            b.borrow_date,
+            b.return_date,
+            DATEDIFF(DAY, b.due_date, b.return_date) AS days_late,
+            ISNULL(f.amount, 0) AS fine,
+            ISNULL(f.payment_status, 'UNPAID') AS paid
+        FROM Borrowing b
+        JOIN Books bk ON b.book_id = bk.book_id
+        JOIN Users u ON b.user_id = u.user_id
+        LEFT JOIN Fines f ON b.borrow_id = f.borrow_id
+        WHERE b.return_date IS NOT NULL
+        ORDER BY b.return_date DESC
+        """
+        results = self.db.execute_query(query, fetch=True)
+        if not results:
+            return []
 
-        # DFD: Update book status (Back to Available)
-        if book_id in self.book_db:
-            self.book_db[book_id]["status"] = "Available"
+        return [
+            {
+                "title": row[0],
+                "full_name": row[1],
+                "borrow_date": row[2],
+                "return_date": row[3],
+                "days_late": max(0, row[4] if row[4] else 0),
+                "fine": float(row[5]) if row[5] else 0,
+                "paid": row[6]
+            }
+            for row in results
+        ]
 
-        # DFD: Borrowing info -> Update history / Fine status
-        title = self.ui.current_table.item(row_index, 1).text()
-        member = self.ui.current_table.item(row_index, 2).text()
-        b_date = self.ui.current_table.item(row_index, 3).text()
-        
-        self.update_history_ui(title, member, b_date, return_date_str, late_days, f"{fine} USD", paid_status)
-        
-        # Remove from current borrowing table
-        self.ui.current_table.removeRow(row_index)
+    def get_book_title_by_id(self, book_id: int) -> Optional[str]:
+        result = self.db.execute_query(
+            "SELECT title FROM Books WHERE book_id = ?",
+            (book_id,),
+            fetch="one"
+        )
+        return result[0] if result else None
 
-    def update_history_ui(self, title, member, b_date, r_date, late, fine, paid):
-        row = self.ui.history_table.rowCount()
-        self.ui.history_table.insertRow(row)
-        data = [title, member, b_date, r_date, max(0, late), fine, paid]
-        for col, value in enumerate(data):
-            self.ui.history_table.setItem(row, col, QTableWidgetItem(str(value)))
+    def get_user_name_by_id(self, user_id: int) -> Optional[str]:
+        result = self.db.execute_query(
+            "SELECT full_name FROM Users WHERE user_id = ?",
+            (user_id,),
+            fetch="one"
+        )
+        return result[0] if result else None
+
+    def borrow_book(self, user_id: int, book_id: int, borrow_days: int = 14) -> Tuple[bool, str]:
+        """Create a new borrowing record - KHÔNG cần staff_id"""
+        today = date.today()
+        due_date = today + timedelta(days=borrow_days)
+
+        # Check if book is already borrowed
+        check_query = """
+        SELECT borrow_id 
+        FROM Borrowing 
+        WHERE book_id = ? AND return_date IS NULL
+        """
+        exists = self.db.execute_query(check_query, (book_id,), fetch="one")
+        if exists:
+            return False, "This book is currently borrowed by someone else."
+
+        # Check if user exists and is active
+        user_check = """
+        SELECT status FROM Users WHERE user_id = ?
+        """
+        user = self.db.execute_query(user_check, (user_id,), fetch="one")
+        if not user:
+            return False, "User not found."
+        if user[0] != 'ACTIVE':
+            return False, f"User account is {user[0]}. Cannot borrow."
+
+        # Insert borrowing record - BỎ staff_id
+        insert_query = """
+        INSERT INTO Borrowing (user_id, book_id, borrow_date, due_date)
+        VALUES (?, ?, ?, ?)
+        """
+        success = self.db.execute_query(
+            insert_query,
+            (user_id, book_id, today, due_date),
+            commit=True
+        )
+
+        if success:
+            return True, f"Book borrowed successfully. Due date: {due_date}"
+        else:
+            return False, "Failed to create borrowing record."
+
+    def return_book(self, borrow_id: int) -> Tuple[bool, str, float]:
+        """Process book return and calculate fine if applicable - BỎ staff_id"""
+        today = date.today()
+
+        # Get borrowing info
+        query = """
+        SELECT user_id, due_date, return_date 
+        FROM Borrowing 
+        WHERE borrow_id = ? AND return_date IS NULL
+        """
+        borrow = self.db.execute_query(query, (borrow_id,), fetch="one")
+        if not borrow:
+            return False, "Borrow record not found or already returned.", 0
+
+        user_id, due_date, _ = borrow
+
+        days_late = max(0, (today - due_date).days)
+        fine_amount = days_late * self.FINE_PER_DAY
+
+        # Update borrowing record - BỎ staff_id
+        update_query = """
+        UPDATE Borrowing 
+        SET return_date = ?
+        WHERE borrow_id = ?
+        """
+        success = self.db.execute_query(
+            update_query,
+            (today, borrow_id),
+            commit=True
+        )
+
+        if not success:
+            return False, "Failed to update return date.", 0
+
+        if days_late > 0:
+            fine_query = """
+            INSERT INTO Fines (borrow_id, amount, reason, payment_status)
+            VALUES (?, ?, ?, 'UNPAID')
+            """
+            self.db.execute_query(
+                fine_query,
+                (borrow_id, fine_amount, f"Late by {days_late} days"),
+                commit=True
+            )
+            return True, f"Book returned. Late by {days_late} days. Fine: {fine_amount:,.0f} ₫", fine_amount
+        else:
+            return True, "Book returned on time. No fine.", 0
