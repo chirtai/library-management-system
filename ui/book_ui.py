@@ -5,6 +5,8 @@ from PyQt6.QtWidgets import (
     QHeaderView, QTabWidget, QMessageBox, QComboBox, QGridLayout)
 from PyQt6.QtCore import Qt
 
+from ui.book_dialog import BookDialog
+
 class BookInterface(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
