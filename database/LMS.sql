@@ -74,7 +74,3 @@ CREATE TABLE Payments (
     FOREIGN KEY (fine_id) REFERENCES Fines(fine_id),
     FOREIGN KEY (staff_id) REFERENCES Users(user_id)
 );
-
-
-
-
