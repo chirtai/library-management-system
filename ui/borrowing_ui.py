@@ -93,10 +93,9 @@ class BorrowingInterface(QWidget):
             history_data = self.logic.get_borrowing_history()
             self.set_borrowing_history(history_data)
         except Exception as e:
-            QMessageBox.critical(self, "Database Error", f"Không thể tải dữ liệu:\n{str(e)}")
+            QMessageBox.critical(self, "Database Error", f"Can not load:\n{str(e)}")
 
     def format_date(self, dt):
-        """Định dạng ngày theo kiểu Việt Nam: dd/MM/yyyy"""
         if isinstance(dt, (date,)):
             return dt.strftime("%d/%m/%Y")
         return str(dt) if dt else "-"
@@ -165,9 +164,9 @@ class BorrowingInterface(QWidget):
                 book_id = int(dialog.book_id_input.text().strip())
                 days = int(dialog.days_input.text().strip() or "14")
                 if days <= 0:
-                    raise ValueError("Số ngày mượn phải lớn hơn 0")
+                    raise ValueError("Borrow book days must be greater than 0")
             except ValueError as e:
-                QMessageBox.warning(self, "Lỗi nhập liệu", f"Dữ liệu không hợp lệ:\n{str(e)}")
+                QMessageBox.warning(self, "Error", f"Error:\n{str(e)}")
                 return
 
             success, message = self.logic.borrow_book(
@@ -178,10 +177,10 @@ class BorrowingInterface(QWidget):
             )
 
             if success:
-                QMessageBox.information(self, "Thành công", message)
+                QMessageBox.information(self, "Success", message)
                 self.load_data()
             else:
-                QMessageBox.warning(self, "Thất bại", message)
+                QMessageBox.warning(self, "Failed", message)
 
     def return_book(self):
         dialog = ReturnBookDialog(self)
@@ -189,7 +188,7 @@ class BorrowingInterface(QWidget):
             try:
                 borrow_id = int(dialog.borrow_id_input.text().strip())
             except ValueError:
-                QMessageBox.warning(self, "Lỗi nhập liệu", "Vui lòng nhập Borrow ID là số.")
+                QMessageBox.warning(self, "Error", "Please insert Borrow ID")
                 return
 
             success, message, fine = self.logic.return_book(
@@ -199,18 +198,18 @@ class BorrowingInterface(QWidget):
 
             if success:
                 if fine > 0:
-                    QMessageBox.information(self, "Trả sách có phạt", f"{message}\nPhạt: {fine:,.0f} ₫")
+                    QMessageBox.information(self, "Return book with fines", f"{message}\nFines: {fine:,.0f} ₫")
                 else:
-                    QMessageBox.information(self, "Thành công", message)
+                    QMessageBox.information(self, "Success", message)
                 self.load_data()
             else:
-                QMessageBox.warning(self, "Thất bại", message)
+                QMessageBox.warning(self, "Failed", message)
 
 
 class BorrowBookDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Mượn sách")
+        self.setWindowTitle("Borrowing")
         self.setMinimumWidth(400)
 
         layout = QFormLayout(self)
@@ -221,11 +220,11 @@ class BorrowBookDialog(QDialog):
 
         layout.addRow("User ID:", self.user_id_input)
         layout.addRow("Book ID:", self.book_id_input)
-        layout.addRow("Số ngày mượn:", self.days_input)
+        layout.addRow("Borrowing duration:", self.days_input)
 
         buttons = QHBoxLayout()
-        self.ok_btn = QPushButton("Mượn")
-        self.cancel_btn = QPushButton("Hủy")
+        self.ok_btn = QPushButton("Borow")
+        self.cancel_btn = QPushButton("Cancel")
         buttons.addWidget(self.ok_btn)
         buttons.addWidget(self.cancel_btn)
 
@@ -238,7 +237,7 @@ class BorrowBookDialog(QDialog):
 class ReturnBookDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Trả sách")
+        self.setWindowTitle("Returning")
         layout = QFormLayout(self)
 
         self.borrow_id_input = QLineEdit()
@@ -246,8 +245,8 @@ class ReturnBookDialog(QDialog):
         layout.addRow("Borrow ID:", self.borrow_id_input)
 
         buttons = QHBoxLayout()
-        self.ok_btn = QPushButton("Trả")
-        self.cancel_btn = QPushButton("Hủy")
+        self.ok_btn = QPushButton("Return")
+        self.cancel_btn = QPushButton("Cancel")
         buttons.addWidget(self.ok_btn)
         buttons.addWidget(self.cancel_btn)
 
