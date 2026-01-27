@@ -19,6 +19,7 @@ class BookInterface(QWidget):
         self.logic = BookLogic()
         self.setup_ui()
         self.load_books()
+        self.search_input.textChanged.connect(self.filter_books)
         self.btn_add_book.clicked.connect(self.add_book)
         self.btn_edit_book.clicked.connect(self.edit_book)
         self.btn_delete_book.clicked.connect(self.delete_book)
@@ -29,16 +30,11 @@ class BookInterface(QWidget):
 
         # Search and filter bar
         top_bar = QHBoxLayout()
-        search_input = QLineEdit()
-        search_input.setPlaceholderText("Search by BookID, Title, Author, Category")
-        sort_combo = QComboBox()
-        sort_combo.addItems(["Title A-Z", "Author", "Publish Year", "Category"])
-
-        top_bar.addWidget(search_input, 1)
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search by Title, Author, Category, Publisher, Year")
+        top_bar.addWidget(self.search_input, 1)
         top_bar.addSpacing(40)
 
-        top_bar.addWidget(QLabel("Sort by:"))
-        top_bar.addWidget(sort_combo)
         top_bar.addStretch()
         layout.addLayout(top_bar)
 

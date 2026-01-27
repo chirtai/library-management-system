@@ -3,11 +3,16 @@ import os
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
     QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, 
-    QComboBox, QFrame, QGridLayout, QMainWindow, QTabWidget
+    QComboBox, QFrame, QGridLayout, QMainWindow, QTabWidget, QStyledItemDelegate, QAbstractItemView
 )
 from PyQt6.QtCore import Qt
 from logic.fine_payment import FinesController
 from logic.fine_payment import PaymentsController
+
+class CenterDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        option.displayAlignment = Qt.AlignmentFlag.AlignCenter
 
 class MainApp(QMainWindow):
     def __init__(self, parent=None):
@@ -174,10 +179,18 @@ class FinesInterface(QWidget):
             "Fine ID", "Member ID", "Borrow ID", "Amount", "Reason", "Status"
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setShowGrid(False)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.table.setItemDelegate(CenterDelegate(self.table))
         self.table.setStyleSheet("""
             QTableWidget { background-color: white; border: 1px solid #ddd; }
-            QHeaderView::section { background-color: #f2f2f2; font-weight: bold; }
+            QHeaderView::section { background-color: #ffffff; font-weight: bold; }
         """)
+
         self.main_layout.addWidget(self.table)
 
 
@@ -187,15 +200,15 @@ class PaymentsInterface(QWidget):
         self.setup_ui()
 
         self.controller = PaymentsController(self)
-        
+
         # Connect events
         self.btn_check_info.clicked.connect(self.controller.check_borrow_info)
         self.btn_pay.clicked.connect(self.controller.process_payment)
         self.btn_refresh.clicked.connect(self.controller.clear_form)
         self.btn_delete.clicked.connect(self.controller.delete_payment)
-        self.btn_search.clicked.connect(self.controller.search_payments)    
+        self.btn_search.clicked.connect(self.controller.search_payments)
         self.txt_search_input.returnPressed.connect(self.controller.search_payments)
-        
+
         # Set auto-fill fields to ReadOnly
         self.txt_fine_id.setReadOnly(True)
         self.txt_base_fee.setReadOnly(True)
@@ -304,9 +317,15 @@ class PaymentsInterface(QWidget):
         
         header = self.table_payments.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table_payments.verticalHeader().setVisible(False)
+        self.table_payments.setShowGrid(False)
         self.table_payments.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table_payments.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table_payments.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table_payments.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.table_payments.setItemDelegate(CenterDelegate(self.table_payments))
         self.table_payments.setStyleSheet("""
-            QTableWidget { background-color: white; border: 1px solid #ddd; gridline-color: #f0f0f0; }
-            QHeaderView::section { background-color: #f8f9fa; font-weight: bold; border: 1px solid #ddd; }
+            QTableWidget { background-color: white; border: 1px solid #ddd; }
+            QHeaderView::section { background-color: #ffffff; font-weight: bold;}
         """)
         self.main_layout.addWidget(self.table_payments)

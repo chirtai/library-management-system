@@ -25,20 +25,16 @@ class DashboardInterface(QWidget):
     # ================= UI =================
     def init_ui(self):
         self.setStyleSheet("""
-            QWidget { background: #f4f6f9; font-family: Segoe UI; }
-            QLabel#title { font-size: 26px; font-weight: 700; }
+            QWidget { background: #ffffff; font-family: Segoe UI; }
             QFrame.card { background: white; border-radius: 14px; padding: 18px; }
-            QLabel.cardValue { font-size: 30px; font-weight: bold; }
-            QLabel.cardTitle { color: #7f8c8d; font-size: 13px; }
+            QLabel.cardValue { font-size: 35px; font-weight: bold; }
+            QLabel.cardTitle { font-size: 20px; font-weight: bold; color: #7f8c8d; }
         """)
 
         main = QVBoxLayout(self)
         main.setContentsMargins(30, 25, 30, 30)
         main.setSpacing(25)
 
-        title = QLabel("Library Management Dashboard")
-        title.setObjectName("title")
-        main.addWidget(title)
 
         # ===== SUMMARY CARDS =====
         grid = QGridLayout()
@@ -99,7 +95,7 @@ class DashboardInterface(QWidget):
 
         layout.addWidget(QLabel("Borrowing Trends (12 Months)"))
 
-        fig = Figure(figsize=(5, 3))
+        fig = Figure(figsize=(6, 4))
         canvas = FigureCanvas(fig)
         ax = fig.add_subplot(111)
 
@@ -113,7 +109,7 @@ class DashboardInterface(QWidget):
 
         layout.addWidget(QLabel("Books by Category"))
 
-        fig = Figure(figsize=(5, 3))
+        fig = Figure(figsize=(6, 4))
         canvas = FigureCanvas(fig)
         ax = fig.add_subplot(111)
 
@@ -143,6 +139,7 @@ class DashboardInterface(QWidget):
         cat = self.logic.get_books_by_category()
         ax2 = self.category_chart["ax"]
         ax2.clear()
-        ax2.bar(cat["categories"], cat["values"])
-        ax2.grid(axis="y", linestyle="--", alpha=0.6)
+        ax2.barh(cat["categories"], cat["values"])
+        ax2.grid(axis="x", linestyle="--", alpha=0.6)
+        ax2.figure.tight_layout()
         self.category_chart["canvas"].draw()
