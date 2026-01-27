@@ -4,13 +4,13 @@ USE LibraryManagement;
 
 CREATE TABLE Categories (
     category_id INT PRIMARY KEY IDENTITY(1,1),
-    name VARCHAR(100) NOT NULL UNIQUE
+    name NVARCHAR(200) NOT NULL UNIQUE
 );
 
 
 CREATE TABLE Authors (
     author_id INT PRIMARY KEY IDENTITY(1,1),
-    name VARCHAR(150) NOT NULL,
+    name NVARCHAR(200) NOT NULL,
     bio TEXT
 );
 
@@ -31,11 +31,11 @@ CREATE TABLE Users (
 
 CREATE TABLE Books (
     book_id INT PRIMARY KEY IDENTITY(1,1),
-    title VARCHAR(255) NOT NULL,
+    title NVARCHAR(255) NOT NULL,
     isbn VARCHAR(20) UNIQUE,
     category_id INT,
     author_id INT,
-    publisher VARCHAR(100),
+    publisher NVARCHAR(100),
     publish_year INT,
     FOREIGN KEY (category_id) REFERENCES Categories(category_id),
     FOREIGN KEY (author_id) REFERENCES Authors(author_id)
@@ -74,5 +74,7 @@ CREATE TABLE Payments (
     FOREIGN KEY (fine_id) REFERENCES Fines(fine_id),
     FOREIGN KEY (staff_id) REFERENCES Users(user_id)
 );
+
+
 
 
